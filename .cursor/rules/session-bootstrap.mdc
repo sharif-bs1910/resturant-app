@@ -1,0 +1,20 @@
+---
+description: Load AI-DLC context before any work in this repo
+alwaysApply: true
+---
+
+# Session bootstrap
+
+- Before any work, read the four Tier-1 files from the context repo, in order:
+  1. `../resturant-app-architecture/AGENTS.md`
+  2. `../resturant-app-architecture/PROJECT-INDEX.md`
+  3. `../resturant-app-architecture/.ai/context/project-overview.md`
+  4. `../resturant-app-architecture/.ai/AI-ASSISTANT-RULES.md`
+- Then read `AGENTS.md` in this repo for code-level conventions.
+- Summarize back to the human: the current phase, the task with its ticket ID (`FOUND-NNN`) or requirement ID (`FR-FOUND-NNN`), and the constraints that apply.
+- Wait for the human to confirm the summary before editing any file.
+- Ask clarifying questions with the AskQuestion tool (Claude Code: AskUserQuestion) before implementing whenever a requirement, contract or acceptance criterion is ambiguous. Do not guess. Do not invent business operations, personas or feature workflows; business context will be shared later.
+- Work on one task per chat. Start a new chat for the next task.
+- Never build on a wrong summary: if the human corrects it, stop, reload the Tier-1 files and summarize again.
+- State intent and get the plan approved before editing; the AI never approves its own plan.
+- Never read or print secrets (`local.properties`, `google-services.json`, `*.jks`, `*.keystore`, `.env` files).

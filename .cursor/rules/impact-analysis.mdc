@@ -1,0 +1,30 @@
+---
+description: Require an approved impact analysis before changing contracts, shared types, tokens, shared components or build config
+alwaysApply: true
+---
+
+# Impact analysis
+
+Playbook rule: schema / API / shared-interface changes get a blast-radius analysis and an approved plan before any edit.
+
+## Triggers
+
+Run an impact analysis before changing any of:
+
+- API contracts or DTOs (`data/remote/api/`, `data/remote/dto/`).
+- `ApiResult`, `AppError`, `UiText`, `LoadState`, `UiEffect` or `BaseViewModel`.
+- Design tokens (`core/designsystem/theme/`).
+- Public parameters of shared components in `core/designsystem` or `core/ui`.
+- Gradle flavors, `config/env/*.properties` or the version catalog (`gradle/libs.versions.toml`).
+- The Android manifest.
+
+## Procedure
+
+- Run the `impact-analysis` skill.
+- Write `../resturant-app-architecture/docs/06-development/impact-analyses/IA-YYYY-MM-DD-<topic>.md` from `../resturant-app-architecture/templates/IMPACT-ANALYSIS-template.md`.
+- List the consumers found by search together with the exact commands used (for example `rg -n "LoadState" app/src`).
+- State the risk level (Low / Medium / High) and why.
+- Order the plan as `API → clients → tests → docs`.
+- Include rollback steps.
+- Stop and wait for human approval before editing any file the analysis covers.
+- Implement only what the approved analysis covers; if scope grows, update the analysis and ask again.

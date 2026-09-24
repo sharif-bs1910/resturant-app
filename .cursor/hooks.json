@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      { "command": "scripts/ai-hooks/session-start.sh cursor", "timeout": 10 }
+    ],
+    "beforeReadFile": [
+      { "command": "scripts/ai-hooks/guard-secrets.sh cursor", "timeout": 10 }
+    ],
+    "beforeShellExecution": [
+      { "command": "scripts/ai-hooks/guard-secrets.sh cursor", "timeout": 10 }
+    ],
+    "preToolUse": [
+      { "command": "scripts/ai-hooks/guard-secrets.sh cursor", "matcher": "Write|Delete", "timeout": 10 }
+    ],
+    "afterFileEdit": [
+      { "command": "scripts/ai-hooks/format-kotlin.sh cursor", "timeout": 90 }
+    ],
+    "postToolUse": [
+      { "command": "scripts/ai-hooks/design-lint.sh cursor", "matcher": "Write", "timeout": 20 }
+    ],
+    "stop": [
+      { "command": "scripts/ai-hooks/doc-sync-reminder.sh cursor", "timeout": 10, "loop_limit": 1 }
+    ]
+  }
+}

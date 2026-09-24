@@ -1,0 +1,39 @@
+---
+description: Networking, auth and data-layer rules (safeApiCall, DTO mapping, unauthenticated endpoints, token safety, API registry)
+globs: app/src/main/java/**/core/network/**,app/src/main/java/**/core/auth/**,app/src/main/java/**/data/**
+alwaysApply: false
+---
+
+# Networking
+
+## Calls
+
+- Declare Retrofit services in `data/remote/api/<Domain>Api.kt`; only repositories call them.
+- Inject `SafeApiCall` into repositories as `safeApiCall` and wrap every call: `safeApiCall { api.foo() }` returns `ApiResult<T>`.
+- Map to domain inside the repository (`.map { it.toDomain() }`); never return DTOs or throw from a repository.
+- Never catch `CancellationException`; `safeApiCall` rethrows it.
+- Express failures only through `AppError` (`NoInternet`, `Timeout`, `ServiceUnavailable`, `SessionExpired`, `Forbidden`, `NotFound`, `Validation`, `Server`, `Unknown`); changing it needs an impact analysis.
+- Take base URL, timeouts and log level from `BuildConfig` (fed by `config/env/*.properties`); never hardcode URLs.
+
+## DTOs and mappers
+
+- DTOs live in `data/remote/dto`, are `@Serializable` (kotlinx.serialization) and never leave the `data` layer.
+- Map with `toDomain()` extension functions in `data/mapper`.
+
+## Auth
+
+- Mark unauthenticated endpoints with `@Headers("$NO_AUTH_HEADER: true")`; `AuthInterceptor` strips the header and skips the token.
+- Never add `Authorization` headers by hand; `AuthInterceptor` and `TokenAuthenticator` own them.
+- Access tokens only through `TokenStore`; end sessions only through `SessionManager.endSession()`.
+
+## Logging and secrets
+
+- Never log tokens, `Authorization` or cookie headers, full request bodies outside `dev`, or personal data.
+- Never read or print `local.properties`, `google-services.json`, keystores or `.env` files.
+
+## Contracts and docs
+
+- Register every new or changed endpoint in `../resturant-app-architecture/docs/03-context/API-REGISTRY.md` as `api:{domain}:{slug}` in the same change.
+- Do not invent contracts: if the backend contract is unknown, add a PDR to `../resturant-app-architecture/docs/03-context/PENDING-DECISIONS.md` and stop.
+- API contract or DTO changes trigger an impact analysis first.
+- Use the `add-api-endpoint` skill to add an endpoint.

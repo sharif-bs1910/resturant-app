@@ -1,0 +1,76 @@
+<resources>
+    <string name="home_subtitle">The foundation is ready. Features will appear here.</string>
+    <string name="home_version">Version %1$s</string>
+    <string name="env_dev">Development</string>
+    <string name="env_staging">Staging</string>
+    <string name="env_prod">Production</string>
+
+    <string name="action_cancel">Cancel</string>
+    <string name="action_confirm">Confirm</string>
+    <string name="action_ok">OK</string>
+    <string name="action_retry">Try again</string>
+    <string name="action_done">Done</string>
+    <string name="action_add">Add</string>
+    <string name="action_remove">Remove</string>
+    <string name="action_clear_search">Clear search</string>
+
+    <string name="a11y_loading">Loading</string>
+    <string name="a11y_clear_text">Clear text</string>
+    <string name="a11y_increase">Increase quantity</string>
+    <string name="a11y_decrease">Decrease quantity</string>
+    <string name="a11y_backspace">Delete last digit</string>
+    <string name="a11y_choose_time">Choose time</string>
+    <string name="a11y_success">Success</string>
+    <string name="a11y_selected">Selected</string>
+
+    <string name="filter_option_with_count">%1$s · %2$d</string>
+    <string name="input_search_placeholder">Search</string>
+    <string name="input_amount_placeholder">$0.00</string>
+    <string name="address_street">Street address</string>
+    <string name="address_unit">Apt, suite or unit (optional)</string>
+    <string name="address_city">City</string>
+    <string name="address_state">State</string>
+    <string name="address_zip">ZIP code</string>
+    <string name="error_address_street">Enter a street address</string>
+    <string name="error_address_city">Enter a city</string>
+    <string name="error_address_state">Use a 2-letter state code</string>
+    <string name="error_address_zip">Enter a 5-digit ZIP code</string>
+    <string name="time_picker_title">Select time</string>
+
+    <string name="keypad_clear">Clear</string>
+    <string name="keypad_double_zero">00</string>
+    <string name="keypad_decimal">.</string>
+
+    <string name="menu_item_unavailable">Unavailable</string>
+    <string name="order_line_quantity">%1$d×</string>
+    <plurals name="order_items_count">
+        <item quantity="one">%d item</item>
+        <item quantity="other">%d items</item>
+    </plurals>
+    <plurals name="kitchen_elapsed_minutes">
+        <item quantity="one">%d min</item>
+        <item quantity="other">%d min</item>
+    </plurals>
+
+    <string name="state_loading">Loading…</string>
+    <string name="state_empty_title">Nothing here yet</string>
+    <string name="state_empty_message">Items will appear here once they are added.</string>
+    <string name="state_no_results_title">No results for “%1$s”</string>
+    <string name="state_no_results_message">Try a different spelling or fewer words.</string>
+    <string name="offline_blocking_title">You are offline</string>
+    <string name="offline_blocking_message">Reconnect to the internet to continue. Orders cannot be sent while offline.</string>
+    <string name="service_unavailable_message">We are having trouble reaching the restaurant service. Try again in a moment.</string>
+
+    <string name="error_title_generic">Something went wrong</string>
+    <string name="error_title_offline">You are offline</string>
+    <string name="error_title_unavailable">Service unavailable</string>
+    <string name="error_no_internet">Check the internet connection and try again.</string>
+    <string name="error_timeout">The server took too long to respond. Try again.</string>
+    <string name="error_service_unavailable">The service is temporarily unavailable. Try again in a moment.</string>
+    <string name="error_session_expired">Your session has expired. Please sign in again.</string>
+    <string name="error_forbidden">You do not have permission to do this.</string>
+    <string name="error_not_found">We could not find what you were looking for.</string>
+    <string name="error_validation">Some details are not valid. Check them and try again.</string>
+    <string name="error_server">The server had a problem. Try again.</string>
+    <string name="error_unknown">An unexpected error occurred. Try again.</string>
+</resources>

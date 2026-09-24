@@ -1,0 +1,42 @@
+---
+description: Unit, ViewModel and Compose UI test conventions (locations, libraries, fakes, naming)
+globs: app/src/test/**,app/src/androidTest/**
+alwaysApply: false
+---
+
+# Testing
+
+## Locations
+
+- Unit and ViewModel tests: `app/src/test/java/com/noshitechinc/restaurant/`, mirroring the main package.
+- Compose UI tests: `app/src/androidTest/java/com/noshitechinc/restaurant/`.
+- Fakes: `app/src/test/java/com/noshitechinc/restaurant/fakes/` (`FakeXxx`).
+- Shared rules: `app/src/test/java/com/noshitechinc/restaurant/testing/` (`MainDispatcherRule`).
+
+## Libraries
+
+- JUnit4 with `kotlin.test` assertions, MockK, Turbine and kotlinx-coroutines-test (`runTest`).
+- Prefer fakes over mocks for repositories and core interfaces; use MockK for leaf collaborators or interaction checks.
+- Test flows with Turbine: `flow.test { awaitItem() }`.
+- Never use `Thread.sleep` or `runBlocking`; control time with the test dispatcher.
+
+## ViewModels
+
+- Add `@get:Rule val mainDispatcherRule = MainDispatcherRule()` to every ViewModel test.
+- Model new ViewModel tests on `HomeViewModelTest`.
+- Cover `LoadState` transitions, effects (`ShowMessage`, `ShowErrorDialog`, feature effects) and `launchSubmit` duplicate-tap protection via `submittingKeys`.
+
+## Networking
+
+- Test OkHttp interceptors, `TokenAuthenticator` and Retrofit services with MockWebServer; never hit a real network.
+
+## Compose UI
+
+- Use `createComposeRule()` and wrap content in `AppTheme { }`.
+- Find nodes by test tag (`Modifier.testTag`, tag objects such as `StateTags`), not by display text.
+
+## Naming and commands
+
+- Name unit tests in `app/src/test` as backticked sentences: ``fun `does X when Y`()``.
+- Name instrumented tests in `app/src/androidTest` in camelCase (`fun doesXWhenY()`): method names with spaces fail D8 below API 30 and `minSdk` is 25.
+- Run `./gradlew testDevDebugUnitTest` for unit tests and `./gradlew connectedDevDebugAndroidTest` for UI tests (prefix `ANDROID_HOME=$HOME/Android/Sdk`).

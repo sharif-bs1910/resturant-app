@@ -1,0 +1,5 @@
+<resources>
+    <color name="window_background">#FFF8F7F5</color>
+    <color name="splash_background">#FFFFFFFF</color>
+    <color name="ic_launcher_background">#FFC2410C</color>
+</resources>

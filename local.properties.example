@@ -1,0 +1,5 @@
+sdk.dir=/path/to/Android/Sdk
+KEYSTORE_PATH=/path/to/release.jks
+KEYSTORE_PASSWORD=
+KEY_ALIAS=
+KEY_PASSWORD=

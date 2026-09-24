@@ -1,0 +1,28 @@
+{
+  "hooks": {
+    "SessionStart": [
+      { "hooks": [ { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/scripts/ai-hooks/session-start.sh claude", "timeout": 10 } ] }
+    ],
+    "PreToolUse": [
+      { "matcher": "Read|Edit|MultiEdit|Write|Bash", "hooks": [ { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/scripts/ai-hooks/guard-secrets.sh claude", "timeout": 10 } ] }
+    ],
+    "PostToolUse": [
+      { "matcher": "Edit|MultiEdit|Write", "hooks": [
+        { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/scripts/ai-hooks/format-kotlin.sh claude", "timeout": 90 },
+        { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/scripts/ai-hooks/design-lint.sh claude", "timeout": 20 }
+      ] }
+    ],
+    "Stop": [
+      { "hooks": [ { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/scripts/ai-hooks/doc-sync-reminder.sh claude", "timeout": 10 } ] }
+    ]
+  },
+  "permissions": {
+    "allow": ["Bash(./gradlew:*)", "Bash(scripts/ai-hooks/*)"],
+    "deny": [
+      "Read(./local.properties)",
+      "Read(./**/google-services.json)",
+      "Read(./**/*.jks)",
+      "Read(./**/*.keystore)"
+    ]
+  }
+}

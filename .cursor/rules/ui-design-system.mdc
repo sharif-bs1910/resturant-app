@@ -1,0 +1,50 @@
+---
+description: Design tokens, shared components, previews, long-content and adaptive rules for UI code
+globs: app/src/main/java/**/core/designsystem/**,app/src/main/java/**/core/ui/**,app/src/main/java/**/feature/**
+alwaysApply: false
+---
+
+# UI design system
+
+## Tokens
+
+- Use tokens only: `AppTheme.colors`, `AppTheme.typography`, `AppTheme.spacing`, `AppTheme.radius`, `AppTheme.border`, `AppTheme.sizes`.
+- Never write `Color(0x…)` or raw `N.dp` / `N.sp` literals outside `core/designsystem/theme/`, `core/designsystem/preview/` and preview functions at the bottom of files.
+- Never hardcode user-facing strings: no `Text("…")` and no `text` / `title` / `label` / `message` / `placeholder` / `contentDescription = "…"` outside preview functions. Log messages, submit keys and test tags are not user-facing and may be literals.
+- Light mode only; do not add a dark theme. Token values are placeholders until Figma (PDR-002); change them only in `theme/` and only after an impact analysis.
+- Map domain statuses to `StatusTone` (`Neutral`, `Info`, `Success`, `Warning`, `Danger`) in the feature, not in the design system.
+
+## Components
+
+- Reuse components in `core/designsystem/component/<group>/`, `core/designsystem/state/` and `core/ui/state/` before creating new ones; build new shared components with the `build-ui-component` skill.
+- Component signature: required params, then `modifier: Modifier = Modifier`, then optional params; stateless (`value` + `onValueChange`); `enabled: Boolean = true`.
+- Interactive components accept `interactionSource: MutableInteractionSource? = null` and derive pressed/focused visuals with `val source = interactionSource ?: remember { MutableInteractionSource() }` then `rememberInteractionVisuals(source)`.
+- Keep touch targets at least `AppTheme.sizes.minTouchTarget`.
+- Get strings via `stringResource(R.string.…)` and `UiText.asString()`; content descriptions come from resources too.
+
+## Previews
+
+- Every public composable has previews at the bottom of its file; preview functions are `private`.
+- Annotate component previews with `@ComponentPreviews` and screen previews with `@ScreenPreviews`; wrap each in `PreviewSurface { }`.
+- Preview every variant and state (enabled, disabled, pressed, focused, loading, error, empty, as applicable).
+- Show pressed/focused with `PreviewSurface(forcedInteraction = ForcedInteraction.Pressed)` / `ForcedInteraction.Focused`.
+- Include long and translated samples from `PreviewData`.
+
+## Long content
+
+- Names use `maxLines` + `TextOverflow.Ellipsis`; prices are never truncated (measure the price first, the name takes the remaining width).
+- Addresses wrap up to 3 lines.
+- Buttons and chips grow in height instead of truncating labels.
+- Verify at font scale 1.0, 1.5 and 2.0 and with the `en-XA` pseudo-locale.
+
+## Adaptive layout
+
+- Read layout info with `rememberAdaptiveInfo()`; do not compute window sizes yourself.
+- Use two-pane layouts when `usesTwoPane` (Medium/Expanded width); single pane on Compact.
+- Size card grids with `cardColumns`.
+- Cap widths with `widthIn(max = AppTheme.sizes.formMaxWidth / dialogMaxWidth / contentMaxWidth)`.
+- Tablet layouts must also work in portrait and multi-window (Android 16 may ignore the landscape lock).
+
+## Check
+
+- `scripts/ai-hooks/design-lint-check.sh <file-or-dir>` must print nothing before you finish.

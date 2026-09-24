@@ -1,0 +1,38 @@
+---
+description: MVVM layering, dependency direction and the screen contract (UiState, LoadState, UiEffect, BaseViewModel, Route/Screen)
+globs: app/src/**/*.kt
+alwaysApply: false
+---
+
+# Architecture (MVVM)
+
+## Layering
+
+- Put code in its package under `com.noshitechinc.restaurant`: `feature/<name>/`, `domain/{model,repository,usecase}/`, `data/{remote/api,remote/dto,mapper,repository}/`, `core/{common,ui,network,auth,logging,designsystem,adaptive}/`, `navigation/`, `di/`.
+- Keep the dependency direction `feature` → `domain` ← `data`; `core/*` is usable by all layers.
+- Keep `domain` pure Kotlin: no Android, Compose, Retrofit or DTO imports.
+- Never import `feature`, `data` or `domain` from `core/designsystem`; error-aware UI (`ErrorState`, `LoadStateContent`, `AppScaffold`) belongs in `core/ui`.
+- Declare repository interfaces in `domain/repository`, implement them as `…RepositoryImpl` in `data/repository`, bind with `@Binds` in `di/`.
+- Repositories return `ApiResult<DomainModel>`; only repositories call Retrofit services.
+- Add a use case in `domain/usecase` only for cross-repository or business logic; otherwise the ViewModel calls the repository directly.
+
+## ViewModel
+
+- Declare `@HiltViewModel class XxxViewModel @Inject constructor(...) : BaseViewModel()`.
+- Expose `val uiState: StateFlow<XxxUiState>` backed by a private `MutableStateFlow`; `XxxUiState` is an immutable data class updated with `copy`.
+- Give each independently loaded section its own `LoadState<T>` (`Idle`, `Loading`, `Content(data)`, `Empty`, `Error(error: AppError)`); convert results with `ApiResult.toLoadState()`.
+- Hold user-facing text as `UiText` (`Resource(@StringRes id, args)` or `Dynamic(value)` for sanitized server text).
+- Never put `Context`, `Resources` or Compose types in a ViewModel; never use `runBlocking`.
+- Send one-off events with `sendEffect(...)` into `effects: Flow<UiEffect>`. Base effects are `ShowMessage(text, tone)` and `ShowErrorDialog(error)`; `UiEffect` is an open interface, so declare feature effects as `data class`/`data object` implementing it.
+- Run every mutation through `launchSubmit(key) { }`: re-entry with the same key is ignored, the key is always released, unexpected exceptions become `AppError.Unknown`.
+- Drive button loading from `submittingKeys: StateFlow<Set<String>>` collected in the Route: `val submitting by viewModel.submittingKeys.collectAsStateWithLifecycle()`, then pass `"save" in submitting` to the button's `loading`. `isSubmitting(key)` is a non-reactive snapshot; use it only in ViewModel logic and tests. Never keep a separate `isSaving` flag.
+- Report mutation failures with `presentError(error)`: `NoInternet`/`Timeout` become a transient `ShowMessage`, everything else a `ShowErrorDialog`. Session end is not handled here: `TokenAuthenticator` calls `SessionManager.endSession()`, whose `sessionEnded` is observed in `AppNavHost`. Load failures go into the section's `LoadState.Error`.
+
+## Route and Screen
+
+- Split every screen in `feature/<name>/XxxScreen.kt` into `XxxRoute` and `XxxScreen`.
+- `XxxRoute(viewModel: XxxViewModel = hiltViewModel(), onNavigate…)` collects `uiState` with `collectAsStateWithLifecycle()` and wraps the screen in `AppScaffold(effects = viewModel.effects, onEffect = { … }, requiresNetwork = …)`.
+- `XxxScreen(state, onAction…, modifier)` is stateless: no ViewModel, no `hiltViewModel()`, no flows. It owns all previews.
+- Trigger navigation through Route callbacks; emit a navigation effect only when navigation depends on a result.
+- Declare destinations as `@Serializable` types in `navigation/Destinations.kt` and register them in `AppNavHost`.
+- Use the `scaffold-screen` skill to create a new screen.
