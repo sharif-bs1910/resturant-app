@@ -11,7 +11,7 @@ alwaysApply: false
 - Use tokens only: `AppTheme.colors`, `AppTheme.typography`, `AppTheme.spacing`, `AppTheme.radius`, `AppTheme.border`, `AppTheme.sizes`.
 - Never write `Color(0x…)` or raw `N.dp` / `N.sp` literals outside `core/designsystem/theme/`, `core/designsystem/preview/` and preview functions at the bottom of files.
 - Never hardcode user-facing strings: no `Text("…")` and no `text` / `title` / `label` / `message` / `placeholder` / `contentDescription = "…"` outside preview functions. Log messages, submit keys and test tags are not user-facing and may be literals.
-- Light mode only; do not add a dark theme. Token values are placeholders until Figma (PDR-002); change them only in `theme/` and only after an impact analysis.
+- Light mode only; do not add a dark theme. Mapped Noshi Brand Library colours, type, and radius live in `theme/`. Status colours are still placeholders (PDR-002). Change tokens only in `theme/` and only after an impact analysis.
 - Map domain statuses to `StatusTone` (`Neutral`, `Info`, `Success`, `Warning`, `Danger`) in the feature, not in the design system.
 
 ## Components

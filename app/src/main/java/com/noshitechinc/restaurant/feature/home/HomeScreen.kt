@@ -18,6 +18,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.noshitechinc.restaurant.R
 import com.noshitechinc.restaurant.core.common.AppEnvironment
+import com.noshitechinc.restaurant.core.designsystem.component.logo.LogoSurface
+import com.noshitechinc.restaurant.core.designsystem.component.logo.NoshiLockup
 import com.noshitechinc.restaurant.core.designsystem.component.selection.StatusBadge
 import com.noshitechinc.restaurant.core.designsystem.preview.PreviewSurface
 import com.noshitechinc.restaurant.core.designsystem.preview.ScreenPreviews
@@ -44,12 +46,7 @@ fun HomeScreen(state: HomeUiState, modifier: Modifier = Modifier) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.md),
         ) {
-            Text(
-                text = stringResource(R.string.app_name),
-                style = AppTheme.typography.headlineLarge,
-                color = AppTheme.colors.textPrimary,
-                textAlign = TextAlign.Center,
-            )
+            NoshiLockup(surface = LogoSurface.Light, markSize = AppTheme.sizes.logoMark)
             Text(
                 text = stringResource(R.string.home_subtitle),
                 style = AppTheme.typography.bodyLarge,

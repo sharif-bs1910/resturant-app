@@ -1,4 +1,5 @@
 <resources>
+    <string name="logo_content_description">Noshi</string>
     <string name="home_subtitle">The foundation is ready. Features will appear here.</string>
     <string name="home_version">Version %1$s</string>
     <string name="env_dev">Development</string>
