@@ -12,6 +12,7 @@ import com.noshitechinc.restaurant.feature.home.HomeRoute
 import com.noshitechinc.restaurant.feature.pairing.PairingRoute
 import com.noshitechinc.restaurant.feature.role.SelectRoleRoute
 import com.noshitechinc.restaurant.feature.signin.SignInRoute
+import com.noshitechinc.restaurant.feature.splash.SplashRoute
 import kotlinx.coroutines.flow.Flow
 
 @Composable
@@ -24,7 +25,16 @@ fun AppNavHost(sessionEnded: Flow<Unit>, modifier: Modifier = Modifier, navContr
             }
         }
     }
-    NavHost(navController = navController, startDestination = PairingDestination, modifier = modifier) {
+    NavHost(navController = navController, startDestination = SplashDestination, modifier = modifier) {
+        composable<SplashDestination> {
+            SplashRoute(
+                onFinished = {
+                    navController.navigate(PairingDestination) {
+                        popUpTo(SplashDestination) { inclusive = true }
+                    }
+                },
+            )
+        }
         composable<PairingDestination> {
             PairingRoute(onPaired = { navController.navigate(SignInDestination) })
         }

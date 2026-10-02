@@ -26,6 +26,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Backspace
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -461,7 +462,7 @@ private fun SheetCard(modifier: Modifier = Modifier, scroll: Boolean = true, con
 
 @Composable
 private fun SheetHeader(title: String, subtitle: String, onClose: () -> Unit) {
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
         Column(Modifier.weight(1f)) {
             Text(
                 title,
@@ -478,12 +479,19 @@ private fun SheetHeader(title: String, subtitle: String, onClose: () -> Unit) {
                 overflow = TextOverflow.Ellipsis,
             )
         }
-        Text(
-            text = stringResource(R.string.checkout_close),
-            style = AppTheme.typography.labelMedium,
-            color = AppTheme.colors.textMuted,
-            modifier = Modifier.clickable(onClick = onClose),
-        )
+        Box(
+            modifier = Modifier
+                .size(AppTheme.sizes.minTouchTarget)
+                .clickable(onClick = onClose),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Close,
+                contentDescription = stringResource(R.string.checkout_close),
+                tint = AppTheme.colors.textMuted,
+                modifier = Modifier.size(AppTheme.sizes.iconMd),
+            )
+        }
     }
 }
 

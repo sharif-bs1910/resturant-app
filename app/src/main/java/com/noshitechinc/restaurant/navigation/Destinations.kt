@@ -3,6 +3,9 @@ package com.noshitechinc.restaurant.navigation
 import kotlinx.serialization.Serializable
 
 @Serializable
+data object SplashDestination
+
+@Serializable
 data object PairingDestination
 
 @Serializable
