@@ -43,6 +43,8 @@ data class AppColors(
     val onNeutralContainer: Color,
     val focusRing: Color,
     val scrim: Color,
+    val card: Color,
+    val textMuted: Color,
 )
 
 val LightAppColors = AppColors(
@@ -84,4 +86,6 @@ val LightAppColors = AppColors(
     onNeutralContainer = Color(0xFF44403C),
     focusRing = Color(0xFFFF5A3C),
     scrim = Color(0x99000000),
+    card = Color(0xFFFFFFFF),
+    textMuted = Color(0xFF6A6664),
 )

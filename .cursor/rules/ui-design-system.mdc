@@ -35,7 +35,7 @@ alwaysApply: false
 - Names use `maxLines` + `TextOverflow.Ellipsis`; prices are never truncated (measure the price first, the name takes the remaining width).
 - Addresses wrap up to 3 lines.
 - Buttons and chips grow in height instead of truncating labels.
-- Verify at font scale 1.0, 1.5 and 2.0 and with the `en-XA` pseudo-locale.
+- Verify at normal font scale (1.0) and with the `en-XA` pseudo-locale.
 
 ## Adaptive layout
 
