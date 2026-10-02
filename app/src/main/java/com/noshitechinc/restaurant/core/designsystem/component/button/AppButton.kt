@@ -59,7 +59,7 @@ fun AppButton(
     val source = interactionSource ?: remember { MutableInteractionSource() }
     val visuals = rememberInteractionVisuals(source)
     val colors = buttonColors(variant, enabled, visuals.pressed)
-    val shape = RoundedCornerShape(AppTheme.radius.md)
+    val shape = RoundedCornerShape(AppTheme.radius.pill)
     val loadingDescription = stringResource(R.string.a11y_loading)
     Surface(
         onClick = { if (!loading) onClick() },
@@ -75,7 +75,10 @@ fun AppButton(
             .semantics { if (loading) stateDescription = loadingDescription },
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = size.horizontalPadding(), vertical = AppTheme.spacing.sm),
+            modifier = Modifier.padding(
+                horizontal = AppTheme.sizes.buttonHorizontalPadding,
+                vertical = AppTheme.spacing.md,
+            ),
             horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.sm, Alignment.CenterHorizontally),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -121,10 +124,10 @@ internal fun buttonColors(variant: ButtonVariant, enabled: Boolean, pressed: Boo
             ButtonColors(if (pressed) c.primaryPressed else c.primary, c.onPrimary, null)
 
         ButtonVariant.Secondary ->
-            ButtonColors(if (pressed) c.secondaryPressed else c.secondary, c.onSecondary, null)
+            ButtonColors(if (pressed) c.surfacePressed else c.surface, c.textPrimary, null)
 
         ButtonVariant.Outline ->
-            ButtonColors(if (pressed) c.surfacePressed else Color.Transparent, c.primary, c.outline)
+            ButtonColors(if (pressed) c.surfacePressed else Color.Transparent, c.textPrimary, c.textPrimary)
 
         ButtonVariant.Destructive ->
             ButtonColors(if (pressed) c.destructivePressed else c.destructive, c.onDestructive, null)
@@ -136,13 +139,6 @@ private fun ButtonSize.minHeight(): Dp = when (this) {
     ButtonSize.Small -> AppTheme.sizes.buttonSmall
     ButtonSize.Medium -> AppTheme.sizes.buttonMedium
     ButtonSize.Large -> AppTheme.sizes.buttonLarge
-}
-
-@Composable
-private fun ButtonSize.horizontalPadding(): Dp = when (this) {
-    ButtonSize.Small -> AppTheme.spacing.md
-    ButtonSize.Medium -> AppTheme.spacing.lg
-    ButtonSize.Large -> AppTheme.spacing.xl
 }
 
 @Composable
