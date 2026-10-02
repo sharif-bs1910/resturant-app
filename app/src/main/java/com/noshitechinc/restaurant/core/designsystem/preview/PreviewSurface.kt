@@ -1,6 +1,8 @@
 package com.noshitechinc.restaurant.core.designsystem.preview
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
@@ -18,8 +20,12 @@ fun PreviewSurface(
 ) {
     AppTheme {
         CompositionLocalProvider(LocalForcedInteraction provides forcedInteraction) {
-            Surface(modifier = modifier, color = AppTheme.colors.background) {
-                Box(modifier = Modifier.padding(AppTheme.spacing.lg)) { content() }
+            BoxWithConstraints(modifier) {
+                val fill = constraints.hasBoundedWidth && constraints.hasBoundedHeight
+                val frame = if (fill) Modifier.fillMaxSize() else Modifier
+                Surface(modifier = frame, color = AppTheme.colors.background) {
+                    Box(modifier = frame.padding(AppTheme.spacing.lg)) { content() }
+                }
             }
         }
     }
