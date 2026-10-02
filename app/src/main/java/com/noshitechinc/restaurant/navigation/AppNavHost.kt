@@ -7,6 +7,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.noshitechinc.restaurant.feature.checkout.CheckoutRoute
 import com.noshitechinc.restaurant.feature.home.HomeRoute
 import com.noshitechinc.restaurant.feature.pairing.PairingRoute
 import com.noshitechinc.restaurant.feature.role.SelectRoleRoute
@@ -35,12 +36,13 @@ fun AppNavHost(sessionEnded: Flow<Unit>, modifier: Modifier = Modifier, navContr
         composable<SelectRoleDestination> {
             SelectRoleRoute(
                 onContinue = {
-                    navController.navigate(HomeDestination) {
+                    navController.navigate(CheckoutDestination) {
                         popUpTo(PairingDestination) { inclusive = true }
                     }
                 },
             )
         }
+        composable<CheckoutDestination> { CheckoutRoute() }
         composable<HomeDestination> { HomeRoute() }
     }
 }

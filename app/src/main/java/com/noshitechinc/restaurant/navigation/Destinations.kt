@@ -12,4 +12,7 @@ data object SignInDestination
 data object SelectRoleDestination
 
 @Serializable
+data object CheckoutDestination
+
+@Serializable
 data object HomeDestination

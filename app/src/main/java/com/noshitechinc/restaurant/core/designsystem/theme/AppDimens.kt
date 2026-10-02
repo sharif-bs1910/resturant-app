@@ -73,4 +73,12 @@ data class AppSizes(
     val dialogMaxWidth: Dp = 560.dp,
     val formMaxWidth: Dp = 640.dp,
     val contentMaxWidth: Dp = 1200.dp,
+    val checkoutRailWidth: Dp = 248.dp,
+    val checkoutCartWidth: Dp = 360.dp,
+    val checkoutSheetWidth: Dp = 660.dp,
+    val checkoutIdleCardWidth: Dp = 520.dp,
+    val checkoutSearchWidth: Dp = 300.dp,
+    val checkoutNavDot: Dp = 6.dp,
+    val checkoutStatusDot: Dp = 10.dp,
+    val checkoutDetailWidth: Dp = 400.dp,
 )
