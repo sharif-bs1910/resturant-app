@@ -97,6 +97,24 @@ fun CheckoutRoute(viewModel: CheckoutViewModel = hiltViewModel()) {
             onMarkComplete = viewModel::onMarkBoardComplete,
             onToggleFulfillment = viewModel::onToggleBoardFulfillment,
             onClose = viewModel::onCloseBoardDetail,
+            onAddCharge = viewModel::onAddCharge,
+            onRefund = viewModel::onRefund,
+            onCancel = viewModel::onCancelOrder,
+            onDismissDialog = viewModel::onDismissBoardDialog,
+            onChargeAmount = viewModel::onChargeAmount,
+            onChargeReason = viewModel::onChargeReason,
+            onRefundAmount = viewModel::onRefundAmount,
+            onRefundReason = viewModel::onRefundReason,
+            onBoardStreet = viewModel::onBoardStreet,
+            onBoardApt = viewModel::onBoardApt,
+            onBoardZip = viewModel::onBoardZip,
+            onBoardNotes = viewModel::onBoardNotes,
+            onConfirmCharge = viewModel::onConfirmCharge,
+            onConfirmRefund = viewModel::onConfirmRefund,
+            onConfirmCancel = viewModel::onConfirmCancel,
+            onKeepPickup = viewModel::onKeepBoardPickup,
+            onSaveAddress = viewModel::onSaveBoardAddress,
+            onNewOrder = viewModel::onNewOrder,
         ),
     )
 }
@@ -171,6 +189,7 @@ fun CheckoutScreen(
             }
         }
         CheckoutOverlayHost(state, overlay)
+        if (state.section == KitchenSection.Orders) BoardDialogHost(state, board)
         state.promptedMenuItem?.let { item ->
             UnavailableDialog(item.name, state.unavailableUntil, menu)
         }

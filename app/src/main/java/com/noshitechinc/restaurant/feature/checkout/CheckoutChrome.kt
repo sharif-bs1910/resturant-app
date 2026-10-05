@@ -176,11 +176,19 @@ fun CheckoutChip(label: String, selected: Boolean, modifier: Modifier = Modifier
 }
 
 @Composable
-fun PillButton(label: String, onClick: () -> Unit, modifier: Modifier = Modifier, filled: Boolean = true, enabled: Boolean = true) {
+fun PillButton(
+    label: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    filled: Boolean = true,
+    enabled: Boolean = true,
+    destructive: Boolean = false,
+) {
     val colors = AppTheme.colors
     val shape = RoundedCornerShape(AppTheme.radius.pill)
     val background = when {
         !enabled -> colors.primary.copy(alpha = 0.4f)
+        destructive -> colors.statusDanger
         filled -> colors.primary
         else -> colors.card
     }
@@ -203,7 +211,11 @@ fun PillButton(label: String, onClick: () -> Unit, modifier: Modifier = Modifier
         Text(
             text = label,
             style = AppTheme.typography.labelLarge,
-            color = if (filled) colors.card else colors.textPrimary,
+            color = when {
+                destructive -> colors.background
+                filled -> colors.card
+                else -> colors.textPrimary
+            },
             textAlign = TextAlign.Center,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,

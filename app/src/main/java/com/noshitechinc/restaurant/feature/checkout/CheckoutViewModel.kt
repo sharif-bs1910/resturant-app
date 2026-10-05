@@ -21,8 +21,11 @@ class CheckoutViewModel @Inject constructor() : BaseViewModel() {
     fun onNewOrder() {
         _uiState.update {
             it.copy(
+                section = KitchenSection.Checkout,
                 step = CheckoutStep.Building,
                 overlay = CheckoutOverlay.None,
+                boardDialog = BoardDialog.None,
+                canceledOrder = null,
                 lines = SampleCart,
                 channel = OrderChannel.InStore,
                 fulfillment = Fulfillment.Pickup,
@@ -137,7 +140,7 @@ class CheckoutViewModel @Inject constructor() : BaseViewModel() {
     }
 
     fun onSection(section: KitchenSection) {
-        _uiState.update { it.copy(section = section, overlay = CheckoutOverlay.None, menuPromptId = null) }
+        _uiState.update { it.copy(section = section, overlay = CheckoutOverlay.None, boardDialog = BoardDialog.None, menuPromptId = null) }
     }
 
     fun onSettlement(settlement: Settlement) {
@@ -299,13 +302,132 @@ class CheckoutViewModel @Inject constructor() : BaseViewModel() {
 
     fun onToggleBoardFulfillment() {
         _uiState.update { state ->
+            val order = state.selectedBoard ?: return@update state
+            if (order.fulfillment == Fulfillment.Pickup && order.addressLine == null) {
+                state.copy(boardDialog = BoardDialog.Address, boardField = BoardField.Street)
+            } else {
+                state.copy(
+                    boardOrders = state.boardOrders.map { current ->
+                        if (current.number != order.number) {
+                            current
+                        } else {
+                            val next = if (current.fulfillment == Fulfillment.Pickup) Fulfillment.Delivery else Fulfillment.Pickup
+                            current.copy(fulfillment = next)
+                        }
+                    },
+                )
+            }
+        }
+    }
+
+    fun onAddCharge() {
+        _uiState.update { it.copy(boardDialog = BoardDialog.Charge, boardField = BoardField.Amount) }
+    }
+
+    fun onRefund() {
+        _uiState.update { state ->
+            val total = state.selectedBoard?.totalCents ?: return@update state
+            state.copy(boardDialog = BoardDialog.Refund, boardField = BoardField.Amount, refundAmount = moneyInput(total))
+        }
+    }
+
+    fun onCancelOrder() {
+        _uiState.update { it.copy(boardDialog = BoardDialog.Cancel) }
+    }
+
+    fun onDismissBoardDialog() {
+        _uiState.update { it.copy(boardDialog = BoardDialog.None) }
+    }
+
+    fun onBoardField(field: BoardField) {
+        _uiState.update { it.copy(boardField = field) }
+    }
+
+    fun onChargeAmount(value: String) {
+        _uiState.update { it.copy(chargeAmount = value, boardField = BoardField.Amount) }
+    }
+
+    fun onChargeReason(value: String) {
+        _uiState.update { it.copy(chargeReason = value, boardField = BoardField.Reason) }
+    }
+
+    fun onRefundAmount(value: String) {
+        _uiState.update { it.copy(refundAmount = value, boardField = BoardField.Amount) }
+    }
+
+    fun onRefundReason(value: String) {
+        _uiState.update { it.copy(refundReason = value, boardField = BoardField.Reason) }
+    }
+
+    fun onBoardStreet(value: String) {
+        _uiState.update { it.copy(boardStreet = value, boardField = BoardField.Street) }
+    }
+
+    fun onBoardApt(value: String) {
+        _uiState.update { it.copy(boardApt = value, boardField = BoardField.Apt) }
+    }
+
+    fun onBoardZip(value: String) {
+        _uiState.update { it.copy(boardZip = value.filter(Char::isDigit).take(MaxZip), boardField = BoardField.Zip) }
+    }
+
+    fun onBoardNotes(value: String) {
+        _uiState.update { it.copy(boardNotes = value, boardField = BoardField.Notes) }
+    }
+
+    fun onConfirmCharge() {
+        _uiState.update { state ->
+            val add = parseDollars(state.chargeAmount)
             state.copy(
+                boardDialog = BoardDialog.None,
                 boardOrders = state.boardOrders.map { order ->
-                    if (order.number != state.selectedBoardNumber) {
-                        order
+                    if (order.number == state.selectedBoardNumber) order.copy(subtotalCents = order.subtotalCents + add) else order
+                },
+            )
+        }
+    }
+
+    fun onConfirmRefund() {
+        _uiState.update { state ->
+            val take = parseDollars(state.refundAmount)
+            state.copy(
+                boardDialog = BoardDialog.None,
+                boardOrders = state.boardOrders.map { order ->
+                    if (order.number == state.selectedBoardNumber) {
+                        order.copy(subtotalCents = (order.subtotalCents - take).coerceAtLeast(0))
                     } else {
-                        val next = if (order.fulfillment == Fulfillment.Pickup) Fulfillment.Delivery else Fulfillment.Pickup
-                        order.copy(fulfillment = next)
+                        order
+                    }
+                },
+            )
+        }
+    }
+
+    fun onConfirmCancel() {
+        _uiState.update { state ->
+            val order = state.selectedBoard ?: return@update state.copy(boardDialog = BoardDialog.None)
+            state.copy(
+                boardDialog = BoardDialog.None,
+                canceledOrder = order,
+                boardOrders = state.boardOrders.filter { it.number != order.number },
+            )
+        }
+    }
+
+    fun onKeepBoardPickup() {
+        _uiState.update { it.copy(boardDialog = BoardDialog.None) }
+    }
+
+    fun onSaveBoardAddress() {
+        _uiState.update { state ->
+            val line = if (state.boardApt.isBlank()) state.boardStreet else "${state.boardStreet}, ${state.boardApt}"
+            state.copy(
+                boardDialog = BoardDialog.None,
+                boardOrders = state.boardOrders.map { order ->
+                    if (order.number == state.selectedBoardNumber) {
+                        order.copy(fulfillment = Fulfillment.Delivery, addressLine = line)
+                    } else {
+                        order
                     }
                 },
             )

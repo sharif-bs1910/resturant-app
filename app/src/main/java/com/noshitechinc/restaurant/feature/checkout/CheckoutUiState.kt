@@ -35,6 +35,23 @@ enum class GiftField {
     Pin,
 }
 
+enum class BoardDialog {
+    None,
+    Charge,
+    Refund,
+    Address,
+    Cancel,
+}
+
+enum class BoardField {
+    Amount,
+    Reason,
+    Street,
+    Apt,
+    Zip,
+    Notes,
+}
+
 data class CheckoutUiState(
     val section: KitchenSection = KitchenSection.Checkout,
     val step: CheckoutStep = CheckoutStep.Idle,
@@ -67,6 +84,17 @@ data class CheckoutUiState(
     val boardFilter: BoardFilter = BoardFilter.All,
     val boardQuery: String = "",
     val selectedBoardNumber: String = "1042",
+    val boardDialog: BoardDialog = BoardDialog.None,
+    val boardField: BoardField = BoardField.Amount,
+    val chargeAmount: String = "5.00",
+    val chargeReason: String = "Extra protein",
+    val refundAmount: String = "",
+    val refundReason: String = "Item out of stock",
+    val boardStreet: String = "1847 Telegraph Ave",
+    val boardApt: String = "Apt 3B",
+    val boardZip: String = "94612",
+    val boardNotes: String = "Gate code #1980 · leave at door",
+    val canceledOrder: BoardOrder? = null,
     val menuItems: List<KitchenMenuItem> = DefaultKitchenMenu,
     val menuQuery: String = "",
     val menuFilter: MenuListFilter = MenuListFilter.All,
@@ -102,7 +130,11 @@ data class CheckoutUiState(
 
     val visibleBoard: List<BoardOrder>
         get() = boardOrders.filter { order ->
-            val statusMatches = boardFilter.status == null || order.status == boardFilter.status
+            val statusMatches = when {
+                boardFilter.dueOnly -> order.due
+                boardFilter.status == null -> true
+                else -> order.status == boardFilter.status
+            }
             val query = boardQuery.trim()
             val textMatches = query.isEmpty() || order.number.contains(query, ignoreCase = true) ||
                 order.guest.contains(query, ignoreCase = true)

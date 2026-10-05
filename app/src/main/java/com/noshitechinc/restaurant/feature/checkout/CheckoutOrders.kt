@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
@@ -15,19 +16,26 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PriorityHigh
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import com.noshitechinc.restaurant.R
 import com.noshitechinc.restaurant.core.designsystem.preview.PreviewSurface
@@ -42,10 +50,33 @@ data class BoardActions(
     val onMarkComplete: () -> Unit,
     val onToggleFulfillment: () -> Unit,
     val onClose: () -> Unit,
+    val onAddCharge: () -> Unit = {},
+    val onRefund: () -> Unit = {},
+    val onCancel: () -> Unit = {},
+    val onDismissDialog: () -> Unit = {},
+    val onChargeAmount: (String) -> Unit = {},
+    val onChargeReason: (String) -> Unit = {},
+    val onRefundAmount: (String) -> Unit = {},
+    val onRefundReason: (String) -> Unit = {},
+    val onBoardStreet: (String) -> Unit = {},
+    val onBoardApt: (String) -> Unit = {},
+    val onBoardZip: (String) -> Unit = {},
+    val onBoardNotes: (String) -> Unit = {},
+    val onConfirmCharge: () -> Unit = {},
+    val onConfirmRefund: () -> Unit = {},
+    val onConfirmCancel: () -> Unit = {},
+    val onKeepPickup: () -> Unit = {},
+    val onSaveAddress: () -> Unit = {},
+    val onNewOrder: () -> Unit = {},
 )
 
 @Composable
 fun OrderBoardContent(state: CheckoutUiState, actions: BoardActions) {
+    val canceled = state.canceledOrder
+    if (canceled != null) {
+        CanceledOrderContent(canceled, actions.onNewOrder)
+        return
+    }
     BoxWithConstraints(Modifier.fillMaxSize().padding(AppTheme.spacing.xl)) {
         val sideBySide = maxWidth >= AppTheme.sizes.checkoutDetailWidth + AppTheme.sizes.checkoutCartWidth
         if (sideBySide) {
@@ -113,7 +144,13 @@ private fun BoardRow(order: BoardOrder, selected: Boolean, onClick: () -> Unit) 
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(if (selected) AppTheme.colors.surface else AppTheme.colors.card)
+            .background(
+                when {
+                    selected -> AppTheme.colors.surface
+                    order.due -> AppTheme.colors.warningContainer
+                    else -> AppTheme.colors.card
+                },
+            )
             .clickable(onClick = onClick)
             .padding(horizontal = AppTheme.spacing.lg, vertical = AppTheme.spacing.lg),
         verticalAlignment = Alignment.CenterVertically,
@@ -242,7 +279,7 @@ private fun BoardDetail(order: BoardOrder, actions: BoardActions, modifier: Modi
         if (pinActions) Spacer(Modifier.height(AppTheme.spacing.xs))
         PillButton(stringResource(R.string.checkout_mark_complete), actions.onMarkComplete, Modifier.fillMaxWidth())
         Row(horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.sm)) {
-            QuietButton(stringResource(R.string.checkout_add_charge), {})
+            QuietButton(stringResource(R.string.checkout_add_charge), actions.onAddCharge)
             QuietButton(
                 stringResource(
                     R.string.checkout_switch_fulfillment,
@@ -253,8 +290,8 @@ private fun BoardDetail(order: BoardOrder, actions: BoardActions, modifier: Modi
             )
         }
         Row(horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.sm)) {
-            PillButton(stringResource(R.string.checkout_refund), {}, filled = false)
-            PillButton(stringResource(R.string.checkout_cancel_order), {}, filled = false)
+            PillButton(stringResource(R.string.checkout_refund), actions.onRefund, filled = false)
+            PillButton(stringResource(R.string.checkout_cancel_order), actions.onCancel, filled = false)
         }
     }
 }
@@ -330,12 +367,321 @@ private fun BoardLineRow(line: BoardLine, expanded: Boolean, onClick: () -> Unit
     }
 }
 
+@Composable
+fun BoardDialogHost(state: CheckoutUiState, actions: BoardActions) {
+    val order = state.selectedBoard ?: return
+    if (state.boardDialog == BoardDialog.None) return
+    Box(
+        Modifier
+            .fillMaxSize()
+            .background(AppTheme.colors.textPrimary.copy(alpha = 0.45f))
+            .clickable(onClick = actions.onDismissDialog)
+            .padding(AppTheme.spacing.xl),
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(Modifier.clickable(onClick = {})) {
+            when (state.boardDialog) {
+                BoardDialog.Charge -> ChargeDialog(order, state, actions)
+                BoardDialog.Refund -> RefundDialog(order, state, actions)
+                BoardDialog.Address -> BoardAddressDialog(order, state, actions)
+                BoardDialog.Cancel -> CancelOrderDialog(order, actions)
+                BoardDialog.None -> Unit
+            }
+        }
+    }
+}
+
+@Composable
+private fun ChargeDialog(order: BoardOrder, state: CheckoutUiState, actions: BoardActions) {
+    BoardDialogCard {
+        DialogCopy(
+            stringResource(R.string.checkout_charge_title, order.number),
+            stringResource(R.string.checkout_charge_body, order.detailGuest),
+        )
+        BoardFieldInput(
+            stringResource(R.string.checkout_amount),
+            state.chargeAmount,
+            state.boardField == BoardField.Amount,
+            actions.onChargeAmount,
+        )
+        BoardFieldInput(
+            stringResource(R.string.checkout_reason),
+            state.chargeReason,
+            state.boardField == BoardField.Reason,
+            actions.onChargeReason,
+        )
+        DialogButtons(
+            confirm = stringResource(R.string.checkout_add_charge_amount, formatMoney(parseDollars(state.chargeAmount))),
+            onCancel = actions.onDismissDialog,
+            onConfirm = actions.onConfirmCharge,
+        )
+    }
+}
+
+@Composable
+private fun RefundDialog(order: BoardOrder, state: CheckoutUiState, actions: BoardActions) {
+    BoardDialogCard {
+        DialogCopy(
+            stringResource(R.string.checkout_refund_title, order.number),
+            stringResource(R.string.checkout_refund_body, order.detailGuest),
+        )
+        BoardFieldInput(
+            stringResource(R.string.checkout_refund_amount),
+            state.refundAmount,
+            state.boardField == BoardField.Amount,
+            actions.onRefundAmount,
+        )
+        BoardFieldInput(
+            stringResource(R.string.checkout_reason),
+            state.refundReason,
+            state.boardField == BoardField.Reason,
+            actions.onRefundReason,
+        )
+        DialogButtons(
+            confirm = stringResource(R.string.checkout_refund_confirm, formatMoney(parseDollars(state.refundAmount))),
+            onCancel = actions.onDismissDialog,
+            onConfirm = actions.onConfirmRefund,
+            destructive = true,
+        )
+    }
+}
+
+@Composable
+private fun BoardAddressDialog(order: BoardOrder, state: CheckoutUiState, actions: BoardActions) {
+    BoardDialogCard {
+        DialogCopy(
+            stringResource(R.string.checkout_address_title),
+            stringResource(R.string.checkout_board_address_body, order.number, order.detailGuest),
+        )
+        BoardFieldInput(
+            stringResource(R.string.checkout_street),
+            state.boardStreet,
+            state.boardField == BoardField.Street,
+            actions.onBoardStreet,
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.md), modifier = Modifier.fillMaxWidth()) {
+            BoardFieldInput(
+                stringResource(R.string.checkout_apt),
+                state.boardApt,
+                state.boardField == BoardField.Apt,
+                actions.onBoardApt,
+                Modifier.weight(1f),
+            )
+            BoardFieldInput(
+                stringResource(R.string.checkout_zip),
+                state.boardZip,
+                state.boardField == BoardField.Zip,
+                actions.onBoardZip,
+                Modifier.width(AppTheme.sizes.passcodeKeyWidth + AppTheme.sizes.minTouchTarget),
+            )
+        }
+        BoardFieldInput(
+            stringResource(R.string.checkout_delivery_notes),
+            state.boardNotes,
+            state.boardField == BoardField.Notes,
+            actions.onBoardNotes,
+        )
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.sm)) {
+            Box(Modifier.size(AppTheme.spacing.sm).clip(CircleShape).background(AppTheme.colors.success))
+            Text(
+                stringResource(R.string.checkout_radius),
+                style = AppTheme.typography.labelMedium,
+                color = AppTheme.colors.success,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        DialogButtons(
+            confirm = stringResource(R.string.checkout_save_address),
+            cancel = stringResource(R.string.checkout_keep_pickup),
+            onCancel = actions.onKeepPickup,
+            onConfirm = actions.onSaveAddress,
+        )
+    }
+}
+
+@Composable
+private fun CancelOrderDialog(order: BoardOrder, actions: BoardActions) {
+    BoardDialogCard(Modifier.widthIn(max = AppTheme.sizes.checkoutCartWidth)) {
+        DialogCopy(
+            stringResource(R.string.checkout_cancel_title, order.number),
+            stringResource(R.string.checkout_cancel_body, formatMoney(order.totalCents), order.detailGuest),
+        )
+        DialogButtons(
+            confirm = stringResource(R.string.checkout_cancel_refund),
+            onCancel = actions.onDismissDialog,
+            onConfirm = actions.onConfirmCancel,
+            destructive = true,
+        )
+    }
+}
+
+@Composable
+private fun CanceledOrderContent(order: BoardOrder, onNewOrder: () -> Unit) {
+    Box(Modifier.fillMaxSize().padding(AppTheme.spacing.xl), contentAlignment = Alignment.Center) {
+        Column(
+            modifier = Modifier
+                .width(AppTheme.sizes.dialogMaxWidth)
+                .clip(RoundedCornerShape(AppTheme.radius.lg))
+                .background(AppTheme.colors.card)
+                .border(AppTheme.border.thin, AppTheme.colors.textPrimary.copy(alpha = 0.14f), RoundedCornerShape(AppTheme.radius.lg))
+                .padding(horizontal = AppTheme.spacing.xxxl, vertical = AppTheme.spacing.xxl),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.lg),
+        ) {
+            Box(
+                Modifier.size(AppTheme.sizes.logoMark).clip(CircleShape).background(AppTheme.colors.destructive),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(Icons.Filled.PriorityHigh, contentDescription = null, tint = AppTheme.colors.background)
+            }
+            Text(
+                stringResource(R.string.checkout_canceled_heading, order.number),
+                style = AppTheme.typography.headlineSmall,
+                color = AppTheme.colors.textPrimary,
+                textAlign = TextAlign.Center,
+            )
+            Text(
+                stringResource(R.string.checkout_canceled_body, formatMoney(order.totalCents), order.detailGuest),
+                style = AppTheme.typography.bodyMedium,
+                color = AppTheme.colors.textMuted,
+                textAlign = TextAlign.Center,
+            )
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(AppTheme.radius.sm))
+                    .border(AppTheme.border.thin, AppTheme.colors.textPrimary.copy(alpha = 0.14f), RoundedCornerShape(AppTheme.radius.sm))
+                    .padding(AppTheme.spacing.lg),
+                verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.sm),
+            ) {
+                RecapLine(stringResource(R.string.checkout_recap_channel), stringResource(R.string.checkout_phone))
+                RecapLine(stringResource(R.string.checkout_recap_fulfillment), stringResource(R.string.checkout_canceled), accent = true)
+                RecapLine(stringResource(R.string.checkout_recap_items), order.lines.sumOf { it.quantity }.toString())
+                RecapLine(stringResource(R.string.checkout_total), formatMoney(-order.totalCents), accent = true)
+                RecapLine(stringResource(R.string.checkout_recap_payment), stringResource(R.string.checkout_refunded))
+            }
+            PillButton(stringResource(R.string.checkout_print_cancellation), {}, Modifier.fillMaxWidth(), filled = false)
+            PillButton(stringResource(R.string.checkout_new_order), onNewOrder, Modifier.fillMaxWidth())
+        }
+    }
+}
+
+@Composable
+private fun BoardDialogCard(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
+    Column(
+        modifier
+            .widthIn(max = AppTheme.sizes.checkoutDetailWidth)
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(AppTheme.radius.lg))
+            .background(AppTheme.colors.card)
+            .padding(AppTheme.spacing.xl),
+        verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.lg),
+        content = content,
+    )
+}
+
+@Composable
+private fun DialogCopy(title: String, body: String) {
+    Column(verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.sm)) {
+        Text(title, style = AppTheme.typography.titleLarge, color = AppTheme.colors.textPrimary)
+        Text(body, style = AppTheme.typography.bodyMedium, color = AppTheme.colors.textMuted)
+    }
+}
+
+@Composable
+private fun DialogButtons(
+    confirm: String,
+    onCancel: () -> Unit,
+    onConfirm: () -> Unit,
+    cancel: String = stringResource(R.string.checkout_dialog_cancel),
+    destructive: Boolean = false,
+) {
+    Row(horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.md), modifier = Modifier.fillMaxWidth()) {
+        PillButton(cancel, onCancel, Modifier.weight(1f), filled = false)
+        PillButton(confirm, onConfirm, Modifier.weight(1f), destructive = destructive)
+    }
+}
+
+@Composable
+private fun BoardFieldInput(label: String, value: String, focused: Boolean, onValue: (String) -> Unit, modifier: Modifier = Modifier) {
+    val shape = RoundedCornerShape(AppTheme.radius.sm)
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.sm)) {
+        Text(label, style = AppTheme.typography.labelSmall, color = AppTheme.colors.textMuted, maxLines = 1, softWrap = false)
+        BasicTextField(
+            value = value,
+            onValueChange = onValue,
+            textStyle = AppTheme.typography.bodyMedium.copy(color = AppTheme.colors.textPrimary),
+            singleLine = true,
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = AppTheme.sizes.minTouchTarget)
+                .clip(shape)
+                .border(
+                    if (focused) AppTheme.border.medium else AppTheme.border.thin,
+                    if (focused) AppTheme.colors.primary else AppTheme.colors.textPrimary.copy(alpha = 0.14f),
+                    shape,
+                )
+                .padding(AppTheme.spacing.md),
+            decorationBox = { inner ->
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(Modifier.weight(1f)) { inner() }
+                    if (focused) {
+                        Box(
+                            Modifier
+                                .size(width = AppTheme.border.medium, height = AppTheme.sizes.iconSm)
+                                .background(AppTheme.colors.primary),
+                        )
+                    }
+                }
+            },
+        )
+    }
+}
+
+@Composable
+private fun RecapLine(label: String, value: String, accent: Boolean = false) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        Text(label, style = AppTheme.typography.bodyMedium, color = AppTheme.colors.textMuted)
+        Text(
+            value,
+            style = AppTheme.typography.bodyMedium,
+            color = if (accent) AppTheme.colors.destructive else AppTheme.colors.textPrimary,
+            maxLines = 1,
+            softWrap = false,
+        )
+    }
+}
+
 @ScreenPreviews
 @Composable
 private fun OrderBoardPreview() {
     PreviewSurface {
         OrderBoardContent(
             CheckoutUiState(section = KitchenSection.Orders),
+            BoardActions({}, {}, {}, {}, {}, {}, {}),
+        )
+    }
+}
+
+@ScreenPreviews
+@Composable
+private fun ChargeDialogPreview() {
+    PreviewSurface {
+        BoardDialogHost(
+            CheckoutUiState(section = KitchenSection.Orders, boardDialog = BoardDialog.Charge),
+            BoardActions({
+            }, {}, {}, {}, {}, {}, {}),
+        )
+    }
+}
+
+@ScreenPreviews
+@Composable
+private fun CanceledOrderPreview() {
+    PreviewSurface {
+        OrderBoardContent(
+            CheckoutUiState(section = KitchenSection.Orders, canceledOrder = DefaultBoard.first { it.number == "1042" }),
             BoardActions({}, {}, {}, {}, {}, {}, {}),
         )
     }

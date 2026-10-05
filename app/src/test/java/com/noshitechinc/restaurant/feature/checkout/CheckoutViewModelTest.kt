@@ -112,6 +112,38 @@ class CheckoutViewModelTest {
         assertEquals(OpenOrderStatus.Completed, vm.uiState.value.selectedBoard?.status)
         vm.onBoardFilter(BoardFilter.Completed)
         assertEquals(3, vm.uiState.value.visibleBoard.size)
+        vm.onBoardFilter(BoardFilter.Due)
+        assertEquals(listOf("1043"), vm.uiState.value.visibleBoard.map { it.number })
+    }
+
+    @Test
+    fun `orders board opens charge refund address and cancel`() = runTest {
+        val vm = CheckoutViewModel()
+        vm.onSection(KitchenSection.Orders)
+        vm.onAddCharge()
+        assertEquals(BoardDialog.Charge, vm.uiState.value.boardDialog)
+        vm.onConfirmCharge()
+        assertEquals(4_100, vm.uiState.value.selectedBoard?.subtotalCents)
+        vm.onRefund()
+        assertEquals(BoardDialog.Refund, vm.uiState.value.boardDialog)
+        vm.onRefundAmount("5.00")
+        vm.onConfirmRefund()
+        assertEquals(3_600, vm.uiState.value.selectedBoard?.subtotalCents)
+        vm.onToggleBoardFulfillment()
+        assertEquals(BoardDialog.Address, vm.uiState.value.boardDialog)
+        assertEquals(Fulfillment.Pickup, vm.uiState.value.selectedBoard?.fulfillment)
+        vm.onSaveBoardAddress()
+        assertEquals(Fulfillment.Delivery, vm.uiState.value.selectedBoard?.fulfillment)
+        assertEquals("1847 Telegraph Ave, Apt 3B", vm.uiState.value.selectedBoard?.addressLine)
+        vm.onToggleBoardFulfillment()
+        assertEquals(Fulfillment.Pickup, vm.uiState.value.selectedBoard?.fulfillment)
+        vm.onToggleBoardFulfillment()
+        assertEquals(Fulfillment.Delivery, vm.uiState.value.selectedBoard?.fulfillment)
+        assertEquals(BoardDialog.None, vm.uiState.value.boardDialog)
+        vm.onCancelOrder()
+        vm.onConfirmCancel()
+        assertEquals("1042", vm.uiState.value.canceledOrder?.number)
+        assertEquals(null, vm.uiState.value.boardOrders.firstOrNull { it.number == "1042" })
     }
 
     @Test

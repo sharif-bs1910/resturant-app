@@ -154,12 +154,13 @@ val QueueOrders = listOf(
 
 fun queueOrder(number: String): QueueOrder = QueueOrders.first { it.number == number }
 
-enum class BoardFilter(@param:StringRes val labelRes: Int, val status: OpenOrderStatus?) {
+enum class BoardFilter(@param:StringRes val labelRes: Int, val status: OpenOrderStatus?, val dueOnly: Boolean = false) {
     All(R.string.checkout_filter_all, null),
     New(R.string.checkout_filter_new, OpenOrderStatus.New),
     Cooking(R.string.checkout_filter_cooking, OpenOrderStatus.Cooking),
     Ready(R.string.checkout_filter_ready, OpenOrderStatus.Ready),
     Completed(R.string.checkout_filter_completed, OpenOrderStatus.Completed),
+    Due(R.string.checkout_filter_due, null, dueOnly = true),
 }
 
 data class BoardLine(
@@ -182,6 +183,8 @@ data class BoardOrder(
     val lines: List<BoardLine> = emptyList(),
     val subtotalCents: Int,
     val paidDeep: Boolean = false,
+    val due: Boolean = false,
+    val addressLine: String? = null,
     val expanded: Set<String> = emptySet(),
 ) {
     val taxCents: Int get() = taxCents(subtotalCents)
@@ -197,6 +200,7 @@ val DefaultBoard = listOf(
         time = "6:57 PM",
         subtotalCents = 1_850,
         paidDeep = true,
+        due = true,
     ),
     BoardOrder(
         "1042",
@@ -436,6 +440,20 @@ private val MenuGroupOrder = listOf(MenuCategory.Ramen, MenuCategory.Sides, Menu
 fun groupedMenu(items: List<KitchenMenuItem>): List<Pair<MenuCategory, List<KitchenMenuItem>>> = MenuGroupOrder.mapNotNull { category ->
     val group = items.filter { it.category == category }
     if (group.isEmpty()) null else category to group
+}
+
+fun parseDollars(text: String): Int {
+    val cleaned = text.filter { it.isDigit() || it == '.' }
+    if (cleaned.isEmpty()) return 0
+    val parts = cleaned.split('.', limit = 2)
+    val dollars = parts[0].toIntOrNull() ?: 0
+    val cents = parts.getOrNull(1).orEmpty().filter(Char::isDigit).padEnd(2, '0').take(2).toIntOrNull() ?: 0
+    return dollars * 100 + cents
+}
+
+fun moneyInput(cents: Int): String {
+    val abs = kotlin.math.abs(cents)
+    return "${abs / 100}.${(abs % 100).toString().padStart(2, '0')}"
 }
 
 fun formatMoney(cents: Int): String {
