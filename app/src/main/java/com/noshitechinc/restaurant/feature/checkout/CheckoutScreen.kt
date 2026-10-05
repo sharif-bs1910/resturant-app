@@ -4,6 +4,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -116,9 +118,11 @@ fun CheckoutRoute(viewModel: CheckoutViewModel = hiltViewModel()) {
             onSaveAddress = viewModel::onSaveBoardAddress,
             onNewOrder = viewModel::onNewOrder,
         ),
+        onSettings = viewModel::onSettingsChange,
     )
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun CheckoutScreen(
     state: CheckoutUiState,
@@ -132,12 +136,15 @@ fun CheckoutScreen(
     onSection: (KitchenSection) -> Unit,
     menu: MenuActions,
     board: BoardActions,
+    onSettings: (SettingsState) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val title = when (state.section) {
         KitchenSection.Orders -> R.string.checkout_nav_orders
 
         KitchenSection.Menu -> R.string.checkout_nav_menu
+
+        KitchenSection.Settings -> R.string.checkout_nav_settings
 
         KitchenSection.Checkout -> when (state.step) {
             CheckoutStep.Idle -> R.string.checkout_title
@@ -159,9 +166,10 @@ fun CheckoutScreen(
                     showActions = state.section == KitchenSection.Checkout,
                 )
                 if (!adaptive.usesTwoPane) {
-                    Row(
+                    FlowRow(
                         Modifier.padding(horizontal = AppTheme.spacing.xl, vertical = AppTheme.spacing.sm),
                         horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.sm),
+                        verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.sm),
                     ) {
                         CheckoutChip(stringResource(R.string.checkout_nav_checkout), state.section == KitchenSection.Checkout) {
                             onSection(KitchenSection.Checkout)
@@ -172,12 +180,17 @@ fun CheckoutScreen(
                         CheckoutChip(stringResource(R.string.checkout_nav_menu), state.section == KitchenSection.Menu) {
                             onSection(KitchenSection.Menu)
                         }
+                        CheckoutChip(stringResource(R.string.checkout_nav_settings), state.section == KitchenSection.Settings) {
+                            onSection(KitchenSection.Settings)
+                        }
                     }
                 }
                 when (state.section) {
                     KitchenSection.Orders -> OrderBoardContent(state, board)
 
                     KitchenSection.Menu -> MenuContent(state, menu)
+
+                    KitchenSection.Settings -> SettingsContent(state, onSettings)
 
                     KitchenSection.Checkout -> when (state.step) {
                         CheckoutStep.Idle -> IdleContent(state, onSearch, onNewOrder, onOpenOrder)
@@ -190,6 +203,7 @@ fun CheckoutScreen(
         }
         CheckoutOverlayHost(state, overlay)
         if (state.section == KitchenSection.Orders) BoardDialogHost(state, board)
+        if (state.section == KitchenSection.Settings) SettingsDialogHost(state, onSettings)
         state.promptedMenuItem?.let { item ->
             UnavailableDialog(item.name, state.unavailableUntil, menu)
         }

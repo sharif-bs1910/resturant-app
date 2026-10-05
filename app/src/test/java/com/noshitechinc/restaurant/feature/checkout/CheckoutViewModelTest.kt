@@ -1,5 +1,6 @@
 package com.noshitechinc.restaurant.feature.checkout
 
+import com.noshitechinc.restaurant.core.designsystem.component.quantity.KeypadKey
 import com.noshitechinc.restaurant.testing.MainDispatcherRule
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -177,5 +178,36 @@ class CheckoutViewModelTest {
         vm.onStopTracking()
         vm.onSaveMenuItem()
         assertEquals(null, vm.uiState.value.menuItems.first { it.id == "spicy-tonkotsu" }.stock)
+    }
+
+    @Test
+    fun `settings keeps zones pins and hours on the device`() = runTest {
+        val vm = CheckoutViewModel()
+        vm.onSection(KitchenSection.Settings)
+        val start = vm.uiState.value.settings
+        vm.onSettingsChange(start.withAddedZone())
+        assertEquals(3, vm.uiState.value.settings.zones.size)
+        assertEquals("Zone C", vm.uiState.value.settings.zones.last().name)
+        vm.onSettingsChange(vm.uiState.value.settings.copy(dialog = SettingsDialog.RemoveZone, pendingZoneId = "zone-b"))
+        vm.onSettingsChange(vm.uiState.value.settings.withoutPendingZone())
+        assertEquals(listOf("zone-a", "zone-C"), vm.uiState.value.settings.zones.map { it.id })
+        vm.onSettingsChange(vm.uiState.value.settings.afterPinKey(KeypadKey.Digit(2)))
+        vm.onSettingsChange(vm.uiState.value.settings.afterPinKey(KeypadKey.Digit(2)))
+        vm.onSettingsChange(vm.uiState.value.settings.afterPinKey(KeypadKey.Digit(0)))
+        vm.onSettingsChange(vm.uiState.value.settings.afterPinKey(KeypadKey.Digit(5)))
+        assertEquals(SettingsDialog.ClockedOut, vm.uiState.value.settings.dialog)
+        assertEquals(false, vm.uiState.value.settings.staff.first { it.id == "maya" }.onShift)
+        vm.onSettingsChange(
+            vm.uiState.value.settings.copy(
+                storeDraft = vm.uiState.value.settings.storeDraft.map {
+                    it.copy(opens = "10:00 AM")
+                },
+            ),
+        )
+        vm.onSettingsChange(vm.uiState.value.settings.copy(storeDays = vm.uiState.value.settings.storeDraft, dialog = SettingsDialog.None))
+        assertEquals("10:00 AM", vm.uiState.value.settings.storeDays.first().opens)
+        vm.onSection(KitchenSection.Checkout)
+        assertEquals(SettingsDialog.None, vm.uiState.value.settings.dialog)
+        assertEquals(SettingsDetail.None, vm.uiState.value.settings.detail)
     }
 }

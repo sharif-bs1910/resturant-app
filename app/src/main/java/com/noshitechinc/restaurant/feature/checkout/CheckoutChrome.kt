@@ -65,7 +65,9 @@ fun KitchenRail(
             RailItem(stringResource(R.string.checkout_nav_menu), section == KitchenSection.Menu) {
                 onSection(KitchenSection.Menu)
             }
-            RailItem(stringResource(R.string.checkout_nav_settings), active = false)
+            RailItem(stringResource(R.string.checkout_nav_settings), section == KitchenSection.Settings) {
+                onSection(KitchenSection.Settings)
+            }
         }
         Spacer(Modifier.weight(1f))
         Row(
@@ -152,26 +154,56 @@ fun CheckoutTopBar(title: String, onOpenOrders: () -> Unit, onNewOrder: () -> Un
 }
 
 @Composable
-fun CheckoutChip(label: String, selected: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
+fun CheckoutChip(label: String, selected: Boolean, modifier: Modifier = Modifier, accent: Boolean = false, onClick: () -> Unit) {
     val colors = AppTheme.colors
     val shape = RoundedCornerShape(AppTheme.radius.pill)
-    Box(
-        modifier = modifier
-            .heightIn(min = AppTheme.sizes.minTouchTarget)
-            .clip(shape)
-            .background(if (selected) colors.textPrimary else colors.card)
-            .border(AppTheme.border.thin, if (selected) colors.textPrimary else colors.textPrimary, shape)
-            .clickable(onClick = onClick)
-            .padding(horizontal = AppTheme.spacing.md),
-        contentAlignment = Alignment.Center,
-    ) {
+    val fill = when {
+        selected && accent -> colors.primary
+        selected -> colors.textPrimary
+        else -> colors.card
+    }
+    val labelColor = when {
+        selected && accent -> colors.card
+        selected -> colors.background
+        else -> colors.textPrimary
+    }
+    val labelText = @Composable {
         Text(
             text = label,
             style = AppTheme.typography.labelMedium,
-            color = if (selected) colors.background else colors.textPrimary,
+            color = labelColor,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
+    }
+    if (accent) {
+        Box(
+            modifier = modifier
+                .heightIn(min = AppTheme.sizes.minTouchTarget)
+                .clickable(onClick = onClick),
+            contentAlignment = Alignment.Center,
+        ) {
+            Box(
+                Modifier
+                    .height(AppTheme.sizes.iconLg)
+                    .clip(shape)
+                    .background(fill)
+                    .border(AppTheme.border.thin, if (selected) colors.primary else colors.textPrimary, shape)
+                    .padding(horizontal = AppTheme.spacing.lg),
+                contentAlignment = Alignment.Center,
+            ) { labelText() }
+        }
+    } else {
+        Box(
+            modifier = modifier
+                .heightIn(min = AppTheme.sizes.minTouchTarget)
+                .clip(shape)
+                .background(fill)
+                .border(AppTheme.border.thin, colors.textPrimary, shape)
+                .clickable(onClick = onClick)
+                .padding(horizontal = AppTheme.spacing.md),
+            contentAlignment = Alignment.Center,
+        ) { labelText() }
     }
 }
 

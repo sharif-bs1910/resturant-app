@@ -140,7 +140,19 @@ class CheckoutViewModel @Inject constructor() : BaseViewModel() {
     }
 
     fun onSection(section: KitchenSection) {
-        _uiState.update { it.copy(section = section, overlay = CheckoutOverlay.None, boardDialog = BoardDialog.None, menuPromptId = null) }
+        _uiState.update {
+            it.copy(
+                section = section,
+                overlay = CheckoutOverlay.None,
+                boardDialog = BoardDialog.None,
+                menuPromptId = null,
+                settings = it.settings.copy(dialog = SettingsDialog.None, detail = SettingsDetail.None, pin = ""),
+            )
+        }
+    }
+
+    fun onSettingsChange(next: SettingsState) {
+        _uiState.update { it.copy(settings = next) }
     }
 
     fun onSettlement(settlement: Settlement) {
