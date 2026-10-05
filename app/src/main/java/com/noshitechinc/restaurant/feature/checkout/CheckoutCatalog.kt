@@ -1,5 +1,6 @@
 package com.noshitechinc.restaurant.feature.checkout
 
+import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import com.noshitechinc.restaurant.R
 
@@ -318,6 +319,124 @@ fun unitPrice(item: MenuItem, selected: Set<String>): Int {
 fun subtotalCents(lines: List<CartLine>): Int = lines.sumOf { it.unitCents * it.quantity }
 
 fun taxCents(subtotal: Int): Int = (subtotal * TaxNumerator + RoundHalf) / TaxDenominator
+
+enum class MenuListFilter(@param:StringRes val labelRes: Int) {
+    All(R.string.checkout_filter_all),
+    EightySixed(R.string.menu_filter_eightysixed),
+}
+
+enum class UnavailableUntil(@param:StringRes val labelRes: Int) {
+    EndOfDay(R.string.menu_until_end_of_day),
+    Hours24(R.string.menu_until_24_hours),
+    Week(R.string.menu_until_week),
+    Unknown(R.string.menu_until_unknown),
+}
+
+data class KitchenMenuItem(
+    val id: String,
+    val name: String,
+    val description: String,
+    val priceCents: Int,
+    val category: MenuCategory,
+    @param:DrawableRes val photoRes: Int,
+    val stock: Int?,
+    val available: Boolean,
+    val modifierGroups: List<Int> = emptyList(),
+    val unavailableUntil: UnavailableUntil? = null,
+)
+
+data class MenuDraft(
+    val id: String,
+    val name: String,
+    val description: String,
+    val priceText: String,
+    val stockText: String,
+    val trackStock: Boolean,
+    val available: Boolean,
+)
+
+fun KitchenMenuItem.toDraft() = MenuDraft(
+    id = id,
+    name = name,
+    description = description,
+    priceText = formatMoney(priceCents),
+    stockText = stock?.toString().orEmpty(),
+    trackStock = stock != null,
+    available = available,
+)
+
+fun parseMenuPrice(raw: String): Int = raw.filter(Char::isDigit).toIntOrNull() ?: 0
+
+val DefaultKitchenMenu = listOf(
+    KitchenMenuItem(
+        id = "spicy-tonkotsu",
+        name = "Spicy Tonkotsu",
+        description = "Rich pork broth, chili oil, chashu, egg",
+        priceCents = 1_450,
+        category = MenuCategory.Ramen,
+        photoRes = R.drawable.menu_photo_spicy,
+        stock = 24,
+        available = true,
+        modifierGroups = listOf(R.string.menu_mod_spice, R.string.menu_mod_addons, R.string.menu_mod_richness),
+    ),
+    KitchenMenuItem(
+        id = "shoyu",
+        name = "Shoyu Ramen",
+        description = "",
+        priceCents = 1_300,
+        category = MenuCategory.Ramen,
+        photoRes = R.drawable.menu_photo_shoyu,
+        stock = null,
+        available = true,
+    ),
+    KitchenMenuItem(
+        id = "miso",
+        name = "Miso Ramen",
+        description = "",
+        priceCents = 1_350,
+        category = MenuCategory.Ramen,
+        photoRes = R.drawable.menu_photo_miso,
+        stock = null,
+        available = true,
+    ),
+    KitchenMenuItem(
+        id = "gyoza",
+        name = "Pork Gyoza",
+        description = "",
+        priceCents = 700,
+        category = MenuCategory.Sides,
+        photoRes = R.drawable.menu_photo_gyoza,
+        stock = null,
+        available = true,
+    ),
+    KitchenMenuItem(
+        id = "edamame",
+        name = "Edamame",
+        description = "",
+        priceCents = 550,
+        category = MenuCategory.Sides,
+        photoRes = R.drawable.menu_photo_edamame,
+        stock = null,
+        available = false,
+    ),
+    KitchenMenuItem(
+        id = "matcha",
+        name = "Matcha Lemonade",
+        description = "",
+        priceCents = 500,
+        category = MenuCategory.Drinks,
+        photoRes = R.drawable.menu_photo_matcha,
+        stock = null,
+        available = true,
+    ),
+)
+
+private val MenuGroupOrder = listOf(MenuCategory.Ramen, MenuCategory.Sides, MenuCategory.Drinks, MenuCategory.Donburi)
+
+fun groupedMenu(items: List<KitchenMenuItem>): List<Pair<MenuCategory, List<KitchenMenuItem>>> = MenuGroupOrder.mapNotNull { category ->
+    val group = items.filter { it.category == category }
+    if (group.isEmpty()) null else category to group
+}
 
 fun formatMoney(cents: Int): String {
     val negative = cents < 0

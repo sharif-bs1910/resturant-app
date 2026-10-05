@@ -137,7 +137,7 @@ class CheckoutViewModel @Inject constructor() : BaseViewModel() {
     }
 
     fun onSection(section: KitchenSection) {
-        _uiState.update { it.copy(section = section, overlay = CheckoutOverlay.None) }
+        _uiState.update { it.copy(section = section, overlay = CheckoutOverlay.None, menuPromptId = null) }
     }
 
     fun onSettlement(settlement: Settlement) {
@@ -355,6 +355,114 @@ class CheckoutViewModel @Inject constructor() : BaseViewModel() {
                 orderNumber = order.number,
                 overlay = CheckoutOverlay.GiftCard,
             )
+        }
+    }
+
+    fun onMenuFilter(filter: MenuListFilter) {
+        _uiState.update { it.copy(menuFilter = filter) }
+    }
+
+    fun onMenuSearch(query: String) {
+        _uiState.update { it.copy(menuQuery = query) }
+    }
+
+    fun onSelectMenuItem(id: String) {
+        _uiState.update { state ->
+            val item = state.menuItems.firstOrNull { it.id == id } ?: return@update state
+            state.copy(menuDraft = item.toDraft(), menuPromptId = null)
+        }
+    }
+
+    fun onMenuName(value: String) {
+        _uiState.update { it.copy(menuDraft = it.menuDraft.copy(name = value)) }
+    }
+
+    fun onMenuDescription(value: String) {
+        _uiState.update { it.copy(menuDraft = it.menuDraft.copy(description = value)) }
+    }
+
+    fun onMenuPrice(value: String) {
+        _uiState.update { it.copy(menuDraft = it.menuDraft.copy(priceText = value)) }
+    }
+
+    fun onMenuStock(value: String) {
+        _uiState.update { it.copy(menuDraft = it.menuDraft.copy(stockText = value.filter(Char::isDigit))) }
+    }
+
+    fun onStopTracking() {
+        _uiState.update { it.copy(menuDraft = it.menuDraft.copy(trackStock = false)) }
+    }
+
+    fun onTrackInventory() {
+        _uiState.update { state ->
+            val stock = state.menuDraft.stockText.ifEmpty { "0" }
+            state.copy(menuDraft = state.menuDraft.copy(trackStock = true, stockText = stock))
+        }
+    }
+
+    fun onMenuAvailability(id: String, available: Boolean) {
+        _uiState.update { state ->
+            if (available) {
+                state.copy(
+                    menuItems = state.menuItems.map { item ->
+                        if (item.id == id) item.copy(available = true, unavailableUntil = null) else item
+                    },
+                    menuDraft = if (state.menuDraft.id == id) state.menuDraft.copy(available = true) else state.menuDraft,
+                    menuPromptId = null,
+                )
+            } else {
+                state.copy(menuPromptId = id, unavailableUntil = UnavailableUntil.EndOfDay)
+            }
+        }
+    }
+
+    fun onUnavailableUntil(until: UnavailableUntil) {
+        _uiState.update { it.copy(unavailableUntil = until) }
+    }
+
+    fun onConfirmUnavailable() {
+        _uiState.update { state ->
+            val id = state.menuPromptId ?: return@update state
+            state.copy(
+                menuItems = state.menuItems.map { item ->
+                    if (item.id == id) item.copy(available = false, unavailableUntil = state.unavailableUntil) else item
+                },
+                menuDraft = if (state.menuDraft.id == id) state.menuDraft.copy(available = false) else state.menuDraft,
+                menuPromptId = null,
+            )
+        }
+    }
+
+    fun onDismissUnavailable() {
+        _uiState.update { it.copy(menuPromptId = null) }
+    }
+
+    fun onSaveMenuItem() {
+        _uiState.update { state ->
+            val draft = state.menuDraft
+            val stock = if (draft.trackStock) draft.stockText.toIntOrNull() ?: 0 else null
+            state.copy(
+                menuItems = state.menuItems.map { item ->
+                    if (item.id != draft.id) {
+                        item
+                    } else {
+                        item.copy(
+                            name = draft.name,
+                            description = draft.description,
+                            priceCents = parseMenuPrice(draft.priceText),
+                            stock = stock,
+                            available = draft.available,
+                        )
+                    }
+                },
+            )
+        }
+    }
+
+    fun onCancelMenuEdit() {
+        _uiState.update { state ->
+            val item = state.menuItems.firstOrNull { it.id == state.menuDraft.id } ?: return@update state
+            state.copy(menuDraft = item.toDraft())
         }
     }
 

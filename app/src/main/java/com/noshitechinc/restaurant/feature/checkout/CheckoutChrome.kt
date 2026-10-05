@@ -62,7 +62,9 @@ fun KitchenRail(
             RailItem(stringResource(R.string.checkout_nav_orders), section == KitchenSection.Orders) {
                 onSection(KitchenSection.Orders)
             }
-            RailItem(stringResource(R.string.checkout_nav_menu), active = false)
+            RailItem(stringResource(R.string.checkout_nav_menu), section == KitchenSection.Menu) {
+                onSection(KitchenSection.Menu)
+            }
             RailItem(stringResource(R.string.checkout_nav_settings), active = false)
         }
         Spacer(Modifier.weight(1f))

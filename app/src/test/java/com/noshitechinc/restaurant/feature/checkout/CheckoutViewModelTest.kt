@@ -126,4 +126,24 @@ class CheckoutViewModelTest {
         assertEquals(CheckoutOverlay.None, vm.uiState.value.overlay)
         assertEquals(4, vm.uiState.value.lines.size)
     }
+
+    @Test
+    fun `menu search filters ramen and marking unavailable hides the item`() = runTest {
+        val vm = CheckoutViewModel()
+        vm.onSection(KitchenSection.Menu)
+        vm.onMenuSearch("ramen")
+        assertEquals(3, vm.uiState.value.visibleKitchenMenu.size)
+        vm.onMenuAvailability("edamame", available = false)
+        assertEquals("edamame", vm.uiState.value.menuPromptId)
+        vm.onUnavailableUntil(UnavailableUntil.Week)
+        vm.onConfirmUnavailable()
+        assertEquals(false, vm.uiState.value.menuItems.first { it.id == "edamame" }.available)
+        assertEquals(UnavailableUntil.Week, vm.uiState.value.menuItems.first { it.id == "edamame" }.unavailableUntil)
+        vm.onMenuFilter(MenuListFilter.EightySixed)
+        vm.onMenuSearch("")
+        assertEquals(listOf("edamame"), vm.uiState.value.visibleKitchenMenu.map { it.id })
+        vm.onStopTracking()
+        vm.onSaveMenuItem()
+        assertEquals(null, vm.uiState.value.menuItems.first { it.id == "spicy-tonkotsu" }.stock)
+    }
 }

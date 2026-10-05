@@ -72,6 +72,23 @@ fun CheckoutRoute(viewModel: CheckoutViewModel = hiltViewModel()) {
             onSaveAddress = viewModel::onSaveAddress,
         ),
         onSection = viewModel::onSection,
+        menu = MenuActions(
+            onFilter = viewModel::onMenuFilter,
+            onSearch = viewModel::onMenuSearch,
+            onSelect = viewModel::onSelectMenuItem,
+            onName = viewModel::onMenuName,
+            onDescription = viewModel::onMenuDescription,
+            onPrice = viewModel::onMenuPrice,
+            onStock = viewModel::onMenuStock,
+            onStopTracking = viewModel::onStopTracking,
+            onTrackInventory = viewModel::onTrackInventory,
+            onAvailability = viewModel::onMenuAvailability,
+            onUntil = viewModel::onUnavailableUntil,
+            onConfirmUnavailable = viewModel::onConfirmUnavailable,
+            onDismissUnavailable = viewModel::onDismissUnavailable,
+            onSave = viewModel::onSaveMenuItem,
+            onCancel = viewModel::onCancelMenuEdit,
+        ),
         board = BoardActions(
             onFilter = viewModel::onBoardFilter,
             onSearch = viewModel::onBoardSearch,
@@ -95,14 +112,16 @@ fun CheckoutScreen(
     queue: QueueActions,
     overlay: OverlayActions,
     onSection: (KitchenSection) -> Unit,
+    menu: MenuActions,
     board: BoardActions,
     modifier: Modifier = Modifier,
 ) {
-    val onOrders = state.section == KitchenSection.Orders
-    val title = if (onOrders) {
-        R.string.checkout_nav_orders
-    } else {
-        when (state.step) {
+    val title = when (state.section) {
+        KitchenSection.Orders -> R.string.checkout_nav_orders
+
+        KitchenSection.Menu -> R.string.checkout_nav_menu
+
+        KitchenSection.Checkout -> when (state.step) {
             CheckoutStep.Idle -> R.string.checkout_title
             CheckoutStep.Queue -> R.string.checkout_title
             CheckoutStep.Building -> R.string.checkout_new_order_title
@@ -119,21 +138,30 @@ fun CheckoutScreen(
                     onOpenOrders = onOpenOrders,
                     onNewOrder = onNewOrder,
                     ordersSelected = state.step != CheckoutStep.Building,
-                    showActions = !onOrders,
+                    showActions = state.section == KitchenSection.Checkout,
                 )
                 if (!adaptive.usesTwoPane) {
                     Row(
                         Modifier.padding(horizontal = AppTheme.spacing.xl, vertical = AppTheme.spacing.sm),
                         horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.sm),
                     ) {
-                        CheckoutChip(stringResource(R.string.checkout_nav_checkout), !onOrders) { onSection(KitchenSection.Checkout) }
-                        CheckoutChip(stringResource(R.string.checkout_nav_orders), onOrders) { onSection(KitchenSection.Orders) }
+                        CheckoutChip(stringResource(R.string.checkout_nav_checkout), state.section == KitchenSection.Checkout) {
+                            onSection(KitchenSection.Checkout)
+                        }
+                        CheckoutChip(stringResource(R.string.checkout_nav_orders), state.section == KitchenSection.Orders) {
+                            onSection(KitchenSection.Orders)
+                        }
+                        CheckoutChip(stringResource(R.string.checkout_nav_menu), state.section == KitchenSection.Menu) {
+                            onSection(KitchenSection.Menu)
+                        }
                     }
                 }
-                if (onOrders) {
-                    OrderBoardContent(state, board)
-                } else {
-                    when (state.step) {
+                when (state.section) {
+                    KitchenSection.Orders -> OrderBoardContent(state, board)
+
+                    KitchenSection.Menu -> MenuContent(state, menu)
+
+                    KitchenSection.Checkout -> when (state.step) {
                         CheckoutStep.Idle -> IdleContent(state, onSearch, onNewOrder, onOpenOrder)
                         CheckoutStep.Queue -> QueueContent(state, queue)
                         CheckoutStep.Building -> BuilderContent(state, actions)
@@ -143,6 +171,9 @@ fun CheckoutScreen(
             }
         }
         CheckoutOverlayHost(state, overlay)
+        state.promptedMenuItem?.let { item ->
+            UnavailableDialog(item.name, state.unavailableUntil, menu)
+        }
     }
 }
 
@@ -150,7 +181,8 @@ fun CheckoutScreen(
 @Composable
 private fun CheckoutIdlePreview() {
     PreviewSurface {
-        CheckoutScreen(CheckoutUiState(), {}, {}, {}, {}, emptyActions(), emptyQueue(), emptyOverlay(), {}, emptyBoard())
+        CheckoutScreen(CheckoutUiState(), {
+        }, {}, {}, {}, emptyActions(), emptyQueue(), emptyOverlay(), {}, emptyMenuActions(), emptyBoard())
     }
 }
 
@@ -168,6 +200,7 @@ private fun CheckoutBuilderPreview() {
             emptyQueue(),
             emptyOverlay(),
             {},
+            emptyMenuActions(),
             emptyBoard(),
         )
     }

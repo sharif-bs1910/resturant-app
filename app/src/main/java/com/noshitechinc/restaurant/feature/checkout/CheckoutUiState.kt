@@ -10,6 +10,7 @@ enum class CheckoutStep {
 enum class KitchenSection {
     Checkout,
     Orders,
+    Menu,
 }
 
 enum class CheckoutOverlay {
@@ -66,6 +67,12 @@ data class CheckoutUiState(
     val boardFilter: BoardFilter = BoardFilter.All,
     val boardQuery: String = "",
     val selectedBoardNumber: String = "1042",
+    val menuItems: List<KitchenMenuItem> = DefaultKitchenMenu,
+    val menuQuery: String = "",
+    val menuFilter: MenuListFilter = MenuListFilter.All,
+    val menuDraft: MenuDraft = DefaultKitchenMenu.first().toDraft(),
+    val menuPromptId: String? = null,
+    val unavailableUntil: UnavailableUntil = UnavailableUntil.EndOfDay,
 ) {
     val subtotalCents: Int = subtotalCents(lines)
     val taxCents: Int = taxCents(subtotalCents)
@@ -104,4 +111,17 @@ data class CheckoutUiState(
 
     val selectedBoard: BoardOrder?
         get() = visibleBoard.firstOrNull { it.number == selectedBoardNumber }
+
+    val visibleKitchenMenu: List<KitchenMenuItem>
+        get() = menuItems.filter { item ->
+            val statusMatches = menuFilter != MenuListFilter.EightySixed || !item.available
+            val query = menuQuery.trim()
+            val textMatches = query.isEmpty() ||
+                item.name.contains(query, ignoreCase = true) ||
+                item.category.name.contains(query, ignoreCase = true)
+            statusMatches && textMatches
+        }
+
+    val promptedMenuItem: KitchenMenuItem?
+        get() = menuItems.firstOrNull { it.id == menuPromptId }
 }
