@@ -1,17 +1,24 @@
 package com.noshitechinc.restaurant.core.designsystem.component.selection
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.Role
 import com.noshitechinc.restaurant.core.designsystem.interaction.ForcedInteraction
 import com.noshitechinc.restaurant.core.designsystem.interaction.focusRing
 import com.noshitechinc.restaurant.core.designsystem.interaction.rememberInteractionVisuals
@@ -31,34 +38,45 @@ fun AppSwitch(
     val visuals = rememberInteractionVisuals(source)
     val c = AppTheme.colors
     val shape = RoundedCornerShape(AppTheme.radius.pill)
+    val track = when {
+        !enabled -> c.disabledContainer
+        checked -> c.primary
+        else -> c.textDisabled
+    }
+    val thumb = if (enabled) c.card else c.textDisabled
     Box(
         modifier = modifier
             .sizeIn(
                 minWidth = AppTheme.sizes.minTouchTarget,
                 minHeight = AppTheme.sizes.minTouchTarget,
             )
-            .focusRing(visuals.focused, c.focusRing, AppTheme.border.focus, shape),
+            .focusRing(visuals.focused, c.focusRing, AppTheme.border.focus, shape)
+            .toggleable(
+                value = checked,
+                interactionSource = source,
+                indication = null,
+                enabled = enabled,
+                role = Role.Switch,
+                onValueChange = onCheckedChange,
+            ),
         contentAlignment = Alignment.Center,
     ) {
-        Switch(
-            checked = checked,
-            onCheckedChange = onCheckedChange,
-            enabled = enabled,
-            interactionSource = source,
-            colors = SwitchDefaults.colors(
-                checkedTrackColor = c.primary,
-                checkedThumbColor = c.onPrimary,
-                uncheckedTrackColor = c.surfaceVariant,
-                uncheckedBorderColor = c.outline,
-                uncheckedThumbColor = c.textSecondary,
-                disabledCheckedTrackColor = c.disabledContainer,
-                disabledCheckedThumbColor = c.textDisabled,
-                disabledUncheckedTrackColor = c.disabledContainer,
-                disabledUncheckedThumbColor = c.textDisabled,
-                disabledCheckedBorderColor = c.disabledContainer,
-                disabledUncheckedBorderColor = c.disabledContainer,
-            ),
-        )
+        Box(
+            Modifier
+                .width(AppTheme.sizes.passcodeCellWidth)
+                .height(AppTheme.sizes.iconLg)
+                .clip(shape)
+                .background(track)
+                .padding(AppTheme.spacing.xs),
+            contentAlignment = if (checked) Alignment.CenterEnd else Alignment.CenterStart,
+        ) {
+            Box(
+                Modifier
+                    .size(AppTheme.sizes.iconMd)
+                    .clip(CircleShape)
+                    .background(thumb),
+            )
+        }
     }
 }
 

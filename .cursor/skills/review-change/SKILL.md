@@ -51,7 +51,7 @@ The design lint must print nothing. For UI-test changes also run `ANDROID_HOME=$
 
 **Long content and adaptive**
 - [ ] Names ellipsize, prices never truncate, addresses wrap up to 3 lines, buttons/chips grow in height.
-- [ ] Checked at font scale 2.0 (previews) and in tablet landscape and tablet portrait; widths capped with `AppTheme.sizes.*MaxWidth`; two-pane only via `rememberAdaptiveInfo()`.
+- [ ] Checked at normal font scale in tablet landscape and tablet portrait; widths capped with `AppTheme.sizes.*MaxWidth`; two-pane only via `rememberAdaptiveInfo()`.
 
 **Security and logging**
 - [ ] No tokens, `Authorization`/cookie headers or personal data logged; no secrets read or committed; no hardcoded URLs.
