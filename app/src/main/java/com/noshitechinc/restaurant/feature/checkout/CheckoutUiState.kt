@@ -12,6 +12,7 @@ enum class KitchenSection {
     Orders,
     Menu,
     Settings,
+    Status,
 }
 
 enum class CheckoutOverlay {
@@ -103,6 +104,7 @@ data class CheckoutUiState(
     val menuPromptId: String? = null,
     val unavailableUntil: UnavailableUntil = UnavailableUntil.EndOfDay,
     val settings: SettingsState = SettingsState(),
+    val kitchenBusy: Boolean = false,
 ) {
     val subtotalCents: Int = subtotalCents(lines)
     val taxCents: Int = taxCents(subtotalCents)

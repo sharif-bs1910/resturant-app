@@ -155,6 +155,10 @@ class CheckoutViewModel @Inject constructor() : BaseViewModel() {
         _uiState.update { it.copy(settings = next) }
     }
 
+    fun onKitchenMode(busy: Boolean) {
+        _uiState.update { it.copy(kitchenBusy = busy) }
+    }
+
     fun onSettlement(settlement: Settlement) {
         _uiState.update { it.copy(settlement = settlement) }
     }

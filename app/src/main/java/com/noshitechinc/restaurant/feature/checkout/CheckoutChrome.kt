@@ -33,6 +33,7 @@ import com.noshitechinc.restaurant.core.designsystem.theme.AppTheme
 @Composable
 fun KitchenRail(
     section: KitchenSection = KitchenSection.Checkout,
+    kitchenBusy: Boolean = false,
     onSection: (KitchenSection) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
@@ -76,11 +77,17 @@ fun KitchenRail(
                 .height(AppTheme.sizes.logoMark)
                 .clip(RoundedCornerShape(AppTheme.radius.sm))
                 .border(AppTheme.border.thin, colors.surface, RoundedCornerShape(AppTheme.radius.sm))
+                .clickable { onSection(KitchenSection.Status) }
                 .padding(horizontal = AppTheme.spacing.md),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(spacing.md),
         ) {
-            Box(Modifier.size(AppTheme.sizes.checkoutStatusDot).clip(CircleShape).background(colors.success))
+            Box(
+                Modifier
+                    .size(AppTheme.sizes.checkoutStatusDot)
+                    .clip(CircleShape)
+                    .background(if (kitchenBusy) colors.warning else colors.success),
+            )
             Column {
                 Text(
                     text = stringResource(R.string.checkout_kitchen_status),
@@ -88,7 +95,7 @@ fun KitchenRail(
                     color = colors.textPrimary.copy(alpha = 0.6f),
                 )
                 Text(
-                    text = stringResource(R.string.checkout_kitchen_normal),
+                    text = stringResource(if (kitchenBusy) R.string.checkout_kitchen_busy else R.string.checkout_kitchen_normal),
                     style = AppTheme.typography.titleSmall,
                     color = colors.textPrimary,
                 )

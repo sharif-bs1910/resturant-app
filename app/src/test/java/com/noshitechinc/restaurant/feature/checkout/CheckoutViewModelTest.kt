@@ -210,4 +210,15 @@ class CheckoutViewModelTest {
         assertEquals(SettingsDialog.None, vm.uiState.value.settings.dialog)
         assertEquals(SettingsDetail.None, vm.uiState.value.settings.detail)
     }
+
+    @Test
+    fun `kitchen status switches between normal and busy`() = runTest {
+        val vm = CheckoutViewModel()
+        vm.onSection(KitchenSection.Status)
+        vm.onKitchenMode(true)
+        assertEquals(KitchenSection.Status, vm.uiState.value.section)
+        assertEquals(true, vm.uiState.value.kitchenBusy)
+        vm.onKitchenMode(false)
+        assertEquals(false, vm.uiState.value.kitchenBusy)
+    }
 }

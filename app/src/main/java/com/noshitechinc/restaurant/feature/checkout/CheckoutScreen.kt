@@ -119,6 +119,7 @@ fun CheckoutRoute(viewModel: CheckoutViewModel = hiltViewModel()) {
             onNewOrder = viewModel::onNewOrder,
         ),
         onSettings = viewModel::onSettingsChange,
+        onKitchenMode = viewModel::onKitchenMode,
     )
 }
 
@@ -137,6 +138,7 @@ fun CheckoutScreen(
     menu: MenuActions,
     board: BoardActions,
     onSettings: (SettingsState) -> Unit = {},
+    onKitchenMode: (Boolean) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val title = when (state.section) {
@@ -145,6 +147,8 @@ fun CheckoutScreen(
         KitchenSection.Menu -> R.string.checkout_nav_menu
 
         KitchenSection.Settings -> R.string.checkout_nav_settings
+
+        KitchenSection.Status -> R.string.checkout_kitchen_title
 
         KitchenSection.Checkout -> when (state.step) {
             CheckoutStep.Idle -> R.string.checkout_title
@@ -156,7 +160,9 @@ fun CheckoutScreen(
     val adaptive = rememberAdaptiveInfo()
     Box(modifier.fillMaxSize().background(AppTheme.colors.background)) {
         Row(Modifier.fillMaxSize()) {
-            if (adaptive.usesTwoPane) KitchenRail(section = state.section, onSection = onSection)
+            if (adaptive.usesTwoPane) {
+                KitchenRail(section = state.section, kitchenBusy = state.kitchenBusy, onSection = onSection)
+            }
             Column(Modifier.weight(1f)) {
                 CheckoutTopBar(
                     title = stringResource(title),
@@ -183,6 +189,9 @@ fun CheckoutScreen(
                         CheckoutChip(stringResource(R.string.checkout_nav_settings), state.section == KitchenSection.Settings) {
                             onSection(KitchenSection.Settings)
                         }
+                        CheckoutChip(stringResource(R.string.checkout_kitchen_title), state.section == KitchenSection.Status) {
+                            onSection(KitchenSection.Status)
+                        }
                     }
                 }
                 when (state.section) {
@@ -191,6 +200,8 @@ fun CheckoutScreen(
                     KitchenSection.Menu -> MenuContent(state, menu)
 
                     KitchenSection.Settings -> SettingsContent(state, onSettings)
+
+                    KitchenSection.Status -> KitchenStatusContent(state, onKitchenMode)
 
                     KitchenSection.Checkout -> when (state.step) {
                         CheckoutStep.Idle -> IdleContent(state, onSearch, onNewOrder, onOpenOrder)
