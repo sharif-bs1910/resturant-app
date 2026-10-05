@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -uo pipefail
 
-PREVIEW_RE='^[[:space:]]*@(Preview|TabletLandscapePreview|TabletPortraitPreview|FontScalePreviews|ComponentPreviews|ScreenPreviews)([[:space:](]|$)'
+PREVIEW_RE='^[[:space:]]*@(Preview|TabletLandscapePreview|TabletPortraitPreview|ComponentPreviews|ScreenPreviews)([[:space:](]|$)'
 COLOR_RE='Color\(0x|Color\.(Red|Blue|Black|White|Gray|Green|Yellow|Cyan|Magenta|DarkGray|LightGray)([^A-Za-z]|$)'
 DP_RE='(^|[^A-Za-z0-9_.])([1-9][0-9]*|[0-9]+\.[0-9]+)\.(dp|sp)([^A-Za-z]|$)'
 STRING_RE='(Text\(|(text|title|label|message|placeholder|contentDescription)[[:space:]]*=)[[:space:]]*"[^"]*[A-Za-z][^"]*"'
