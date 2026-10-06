@@ -21,7 +21,7 @@ import com.noshitechinc.restaurant.feature.pairing.PasscodeError
 @Composable
 fun SignInRoute(onSignedIn: () -> Unit, viewModel: SignInViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    AppScaffold(effects = viewModel.effects, onEffect = { effect -> if (effect is OpenSelectRole) onSignedIn() }) {
+    AppScaffold(effects = viewModel.effects, onEffect = { effect -> if (effect is OpenCheckout) onSignedIn() }) {
         SignInScreen(state = state, onDigit = viewModel::onDigit, onDelete = viewModel::onDelete)
     }
 }

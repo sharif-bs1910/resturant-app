@@ -144,13 +144,7 @@ private fun BoardRow(order: BoardOrder, selected: Boolean, onClick: () -> Unit) 
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(
-                when {
-                    selected -> AppTheme.colors.surface
-                    order.due -> AppTheme.colors.warningContainer
-                    else -> AppTheme.colors.card
-                },
-            )
+            .background(if (selected) AppTheme.colors.surface else AppTheme.colors.card)
             .clickable(onClick = onClick)
             .padding(horizontal = AppTheme.spacing.lg, vertical = AppTheme.spacing.lg),
         verticalAlignment = Alignment.CenterVertically,
@@ -186,7 +180,7 @@ private fun BoardRow(order: BoardOrder, selected: Boolean, onClick: () -> Unit) 
             softWrap = false,
             modifier = Modifier
                 .clip(RoundedCornerShape(AppTheme.radius.xs))
-                .background(if (order.paidDeep) AppTheme.colors.primaryPressed else AppTheme.colors.success)
+                .background(AppTheme.colors.success)
                 .padding(horizontal = AppTheme.spacing.xs, vertical = AppTheme.spacing.xxs),
         )
         Text(

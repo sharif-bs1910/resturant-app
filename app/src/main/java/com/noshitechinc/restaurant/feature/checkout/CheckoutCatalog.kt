@@ -182,7 +182,6 @@ data class BoardOrder(
     val time: String,
     val lines: List<BoardLine> = emptyList(),
     val subtotalCents: Int,
-    val paidDeep: Boolean = false,
     val due: Boolean = false,
     val addressLine: String? = null,
     val expanded: Set<String> = emptySet(),
@@ -199,7 +198,6 @@ val DefaultBoard = listOf(
         fulfillment = Fulfillment.Delivery,
         time = "6:57 PM",
         subtotalCents = 1_850,
-        paidDeep = true,
         due = true,
     ),
     BoardOrder(

@@ -29,7 +29,7 @@ class SelectRoleViewModelTest {
         assertEquals(DeviceRole.SelfService, vm.uiState.value.selected)
         vm.effects.test {
             vm.onContinue()
-            assertEquals(OpenHome, awaitItem())
+            assertEquals(OpenSignIn, awaitItem())
         }
     }
 }

@@ -48,7 +48,7 @@ import com.noshitechinc.restaurant.core.ui.AppScaffold
 @Composable
 fun SelectRoleRoute(onContinue: () -> Unit, viewModel: SelectRoleViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    AppScaffold(effects = viewModel.effects, onEffect = { effect -> if (effect is OpenHome) onContinue() }) {
+    AppScaffold(effects = viewModel.effects, onEffect = { effect -> if (effect is OpenSignIn) onContinue() }) {
         SelectRoleScreen(state = state, onSelect = viewModel::onSelect, onContinue = viewModel::onContinue)
     }
 }

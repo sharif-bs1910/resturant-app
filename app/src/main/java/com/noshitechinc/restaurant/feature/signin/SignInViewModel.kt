@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
-data object OpenSelectRole : UiEffect
+data object OpenCheckout : UiEffect
 
 @HiltViewModel
 class SignInViewModel @Inject constructor() : BaseViewModel() {
@@ -21,7 +21,7 @@ class SignInViewModel @Inject constructor() : BaseViewModel() {
         if (current.pin.length >= PIN_LENGTH) return
         val next = current.pin + digit
         _uiState.update { it.copy(pin = next, hasError = false) }
-        if (next.length == PIN_LENGTH) sendEffect(OpenSelectRole)
+        if (next.length == PIN_LENGTH) sendEffect(OpenCheckout)
     }
 
     fun onDelete() {

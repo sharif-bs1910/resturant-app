@@ -36,16 +36,14 @@ fun AppNavHost(sessionEnded: Flow<Unit>, modifier: Modifier = Modifier, navContr
             )
         }
         composable<PairingDestination> {
-            PairingRoute(onPaired = { navController.navigate(SignInDestination) })
+            PairingRoute(onPaired = { navController.navigate(SelectRoleDestination) })
+        }
+        composable<SelectRoleDestination> {
+            SelectRoleRoute(onContinue = { navController.navigate(SignInDestination) })
         }
         composable<SignInDestination> {
             SignInRoute(
-                onSignedIn = { navController.navigate(SelectRoleDestination) },
-            )
-        }
-        composable<SelectRoleDestination> {
-            SelectRoleRoute(
-                onContinue = {
+                onSignedIn = {
                     navController.navigate(CheckoutDestination) {
                         popUpTo(PairingDestination) { inclusive = true }
                     }

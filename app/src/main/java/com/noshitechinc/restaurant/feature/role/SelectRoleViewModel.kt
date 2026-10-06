@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
-data object OpenHome : UiEffect
+data object OpenSignIn : UiEffect
 
 @HiltViewModel
 class SelectRoleViewModel @Inject constructor() : BaseViewModel() {
@@ -21,6 +21,6 @@ class SelectRoleViewModel @Inject constructor() : BaseViewModel() {
     }
 
     fun onContinue() {
-        if (_uiState.value.selected != null) sendEffect(OpenHome)
+        if (_uiState.value.selected != null) sendEffect(OpenSignIn)
     }
 }

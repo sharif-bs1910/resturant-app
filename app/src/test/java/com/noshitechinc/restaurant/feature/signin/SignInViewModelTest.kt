@@ -12,7 +12,7 @@ class SignInViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     @Test
-    fun `the fourth digit opens role selection`() = runTest {
+    fun `the fourth digit opens checkout`() = runTest {
         val vm = SignInViewModel()
         vm.effects.test {
             vm.onDigit(1)
@@ -20,7 +20,7 @@ class SignInViewModelTest {
             vm.onDigit(3)
             expectNoEvents()
             vm.onDigit(4)
-            assertEquals(OpenSelectRole, awaitItem())
+            assertEquals(OpenCheckout, awaitItem())
         }
         assertEquals("1234", vm.uiState.value.pin)
     }
