@@ -26,7 +26,7 @@ class MainActivity : ComponentActivity() {
     lateinit var sessionManager: SessionManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        installSplashScreen()
+        installSplashScreen().setOnExitAnimationListener { splash -> splash.remove() }
         super.onCreate(savedInstanceState)
         requestedOrientation = OrientationPolicy.requestedOrientation(resources.configuration.smallestScreenWidthDp)
         enableEdgeToEdge()
