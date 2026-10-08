@@ -312,9 +312,7 @@ private fun CartDetails(state: CheckoutUiState, actions: CheckoutActions) {
     Text(stringResource(R.string.checkout_current_order), style = AppTheme.typography.titleMedium, color = AppTheme.colors.textPrimary)
     ChoiceRow(stringResource(R.string.checkout_channel), OrderChannel.entries, state.channel, actions.onChannel)
     ChoiceRow(stringResource(R.string.checkout_fulfillment), Fulfillment.entries, state.fulfillment, actions.onFulfillment)
-    if (state.channel == OrderChannel.Phone) {
-        InfoRow("${state.customerName}  ${state.customerPhone}", stringResource(R.string.checkout_edit))
-    }
+    InfoRow("${state.customerName}  ${state.customerPhone}", stringResource(R.string.checkout_edit))
     if (state.fulfillment == Fulfillment.Delivery) {
         Column(verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.xs)) {
             Text(
