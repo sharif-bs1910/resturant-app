@@ -22,9 +22,36 @@ enum class Fulfillment(@param:StringRes val labelRes: Int) {
     Delivery(R.string.checkout_delivery),
 }
 
-enum class Settlement {
-    Cash,
-    Card,
+enum class Settlement(@param:StringRes val labelRes: Int) {
+    Cash(R.string.checkout_cash),
+    Card(R.string.checkout_card),
+    UberEats(R.string.checkout_uber_eats),
+    DoorDash(R.string.checkout_doordash),
+    Grubhub(R.string.checkout_grubhub),
+    ;
+
+    val isDeliveryApp: Boolean
+        get() = this == UberEats || this == DoorDash || this == Grubhub
+}
+
+enum class PayAmountMode {
+    Full,
+    Custom,
+    ByItems,
+}
+
+enum class TipOption {
+    None,
+    Percent5,
+    Percent10,
+    Percent20,
+    Custom,
+}
+
+enum class DeliveryApp(@param:StringRes val labelRes: Int) {
+    UberEats(R.string.checkout_uber_eats),
+    DoorDash(R.string.checkout_doordash),
+    Grubhub(R.string.checkout_grubhub),
 }
 
 enum class OpenOrderStatus(@param:StringRes val labelRes: Int, @param:StringRes val boardLabelRes: Int) {
@@ -49,6 +76,7 @@ data class OpenOrder(
     val summary: String,
     val meta: String,
     val totalCents: Int,
+    val paid: Boolean = false,
 )
 
 data class ModifierDraft(val item: MenuItem, val selected: Set<String>, val quantity: Int, val note: String)
@@ -266,52 +294,47 @@ val DefaultBoard = listOf(
 fun phoneTail(phone: String): String = phone.filter(Char::isDigit).takeLast(4)
 
 val OpenOrders = listOf(
-    OpenOrder("1042", "Maya R.", OpenOrderStatus.New, "2× Spicy Tonkotsu · 1× Pork Gyoza", "PICKUP · 6:40", 3_915),
-    OpenOrder("1041", "Dev P.", OpenOrderStatus.Cooking, "1× Shoyu Ramen · 1× Edamame", "DELIVERY · 6:35", 2_012),
-    OpenOrder("1039", "Tara K.", OpenOrderStatus.Ready, "3× Miso Ramen", "PICKUP · 6:28", 4_404),
+    OpenOrder("1042", "Maya R.", OpenOrderStatus.New, "2× Spicy Tonkotsu · 1× Pork Gyoza", "PICKUP · 6:40", 3_915, paid = true),
+    OpenOrder("1041", "Dev P.", OpenOrderStatus.Cooking, "1× Shoyu Ramen · 1× Edamame", "DELIVERY · 6:35", 2_012, paid = false),
+    OpenOrder("1039", "Tara K.", OpenOrderStatus.Ready, "3× Miso Ramen", "PICKUP · 6:28", 4_404, paid = true),
 )
 
 fun modifierGroups(): List<ModifierGroup> = listOf(
     ModifierGroup(
-        "richness",
-        R.string.checkout_richness,
+        "size",
+        R.string.checkout_size,
         single = true,
         options = listOf(
-            ModifierOption("light", R.string.checkout_mod_light),
-            ModifierOption("regular", R.string.checkout_mod_regular),
-            ModifierOption("extra-rich", R.string.checkout_mod_extra_rich, 150),
+            ModifierOption("size-small", R.string.checkout_mod_size_small),
+            ModifierOption("size-medium", R.string.checkout_mod_size_medium, 300),
+            ModifierOption("size-large", R.string.checkout_mod_size_large, 500),
         ),
     ),
     ModifierGroup(
-        "spice",
-        R.string.checkout_spice,
+        "crust",
+        R.string.checkout_crust,
         single = true,
         options = listOf(
-            ModifierOption("mild", R.string.checkout_mod_mild),
-            ModifierOption("medium", R.string.checkout_mod_medium),
-            ModifierOption("hot", R.string.checkout_mod_hot),
-            ModifierOption("extra-hot", R.string.checkout_mod_extra_hot),
+            ModifierOption("crust-classic", R.string.checkout_mod_crust_classic),
+            ModifierOption("crust-thin", R.string.checkout_mod_crust_thin),
+            ModifierOption("crust-stuffed", R.string.checkout_mod_crust_stuffed, 200),
         ),
     ),
     ModifierGroup(
-        "addons",
-        R.string.checkout_addons,
+        "toppings",
+        R.string.checkout_extra_toppings,
         single = false,
         options = listOf(
-            ModifierOption("chashu", R.string.checkout_mod_chashu, 350),
-            ModifierOption("egg", R.string.checkout_mod_egg, 200),
-            ModifierOption("noodles", R.string.checkout_mod_noodles, 250),
-            ModifierOption("bamboo", R.string.checkout_mod_bamboo, 150),
-            ModifierOption("nori", R.string.checkout_mod_nori, 100),
+            ModifierOption("top-cheese", R.string.checkout_mod_top_cheese, 200),
+            ModifierOption("top-pepperoni", R.string.checkout_mod_top_pepperoni, 250),
+            ModifierOption("top-mushrooms", R.string.checkout_mod_top_mushrooms, 150),
+            ModifierOption("top-olives", R.string.checkout_mod_top_olives, 100),
+            ModifierOption("top-jalapeno", R.string.checkout_mod_top_jalapeno, 100),
         ),
     ),
 )
 
-fun defaultModifiers(itemId: String): Set<String> = if (itemId == "spicy-tonkotsu") {
-    setOf("regular", "medium", "chashu", "egg")
-} else {
-    setOf("regular", "medium")
-}
+fun defaultModifiers(itemId: String): Set<String> = setOf("size-small", "crust-thin")
 
 fun unitPrice(item: MenuItem, selected: Set<String>): Int {
     val extras = modifierGroups().flatMap { it.options }.filter { it.id in selected }.sumOf { it.priceCents }
@@ -461,4 +484,11 @@ fun formatMoney(cents: Int): String {
     val remainder = (abs % 100).toString().padStart(2, '0')
     val sign = if (negative) "−" else ""
     return "$sign$$dollars.$remainder"
+}
+
+fun nextCashRoundUpCents(chargeCents: Int): Int {
+    if (chargeCents <= 0) return 0
+    val step = 1_000
+    val rounded = ((chargeCents + step - 1) / step) * step
+    return if (rounded == chargeCents) chargeCents + step else rounded
 }

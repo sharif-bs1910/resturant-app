@@ -9,9 +9,15 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -20,16 +26,26 @@ import com.noshitechinc.restaurant.core.adaptive.rememberAdaptiveInfo
 import com.noshitechinc.restaurant.core.designsystem.preview.PreviewSurface
 import com.noshitechinc.restaurant.core.designsystem.preview.ScreenPreviews
 import com.noshitechinc.restaurant.core.designsystem.theme.AppTheme
+import com.noshitechinc.restaurant.core.ui.ObserveEffects
+import com.noshitechinc.restaurant.core.ui.ShowMessage
+import com.noshitechinc.restaurant.core.ui.UiEffect
+import com.noshitechinc.restaurant.core.ui.asString
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.launch
 
 @Composable
 fun CheckoutRoute(viewModel: CheckoutViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     CheckoutScreen(
         state = state,
+        effects = viewModel.effects,
         onOpenOrders = viewModel::onOpenOrders,
         onNewOrder = viewModel::onNewOrder,
         onSearch = viewModel::onSearch,
         onOpenOrder = viewModel::onOpenOrder,
+        onPrintTicket = viewModel::onPrintTicket,
+        onPrintReceipt = viewModel::onPrintReceipt,
         actions = CheckoutActions(
             onCategory = viewModel::onCategory,
             onChannel = viewModel::onChannel,
@@ -40,6 +56,8 @@ fun CheckoutRoute(viewModel: CheckoutViewModel = hiltViewModel()) {
             onPay = viewModel::onPay,
             onSaveDraft = viewModel::onSaveDraft,
             onEditAddress = viewModel::onEditAddress,
+            onEditCustomer = viewModel::onEditCustomer,
+            onBuilderSearch = viewModel::onBuilderSearch,
         ),
         queue = QueueActions(
             onFilter = viewModel::onQueueFilter,
@@ -50,6 +68,32 @@ fun CheckoutRoute(viewModel: CheckoutViewModel = hiltViewModel()) {
             onPay = viewModel::onPayQueueOrder,
             onGift = viewModel::onGiftFromQueue,
             onSave = viewModel::onSaveDraft,
+        ),
+        payment = PaymentActions(
+            onSettlement = viewModel::onSettlement,
+            onPayAmountMode = viewModel::onPayAmountMode,
+            onAmountDigit = viewModel::onAmountDigit,
+            onAmountDelete = viewModel::onAmountDelete,
+            onCustomAmountDigits = viewModel::onCustomAmountDigits,
+            onCashDigit = viewModel::onCashDigit,
+            onCashDelete = viewModel::onCashDelete,
+            onCashAmountDigits = viewModel::onCashAmountDigits,
+            onCashTenderExact = viewModel::onCashTenderExact,
+            onCashTenderRoundUp = viewModel::onCashTenderRoundUp,
+            onRedeemGiftCard = viewModel::onRedeemGiftCard,
+            onCollectPayment = viewModel::onCollectPayment,
+            onBack = viewModel::onBackFromPayment,
+            onSendPaymentLink = viewModel::onOpenPaymentLink,
+            onTogglePayLine = viewModel::onTogglePayLine,
+            onSelectAllPayLines = viewModel::onSelectAllPayLines,
+            onClearItemCustomAmount = viewModel::onClearItemCustomAmount,
+            onCardChargeCustom = viewModel::onCardChargeCustom,
+            onTipOption = viewModel::onTipOption,
+            onTipDigit = viewModel::onTipDigit,
+            onTipDelete = viewModel::onTipDelete,
+            onTipAmountDigits = viewModel::onTipAmountDigits,
+            onDeliveryApp = viewModel::onDeliveryApp,
+            onPlatformOrderId = viewModel::onPlatformOrderId,
         ),
         overlay = OverlayActions(
             onDismiss = viewModel::onBackToCart,
@@ -72,6 +116,18 @@ fun CheckoutRoute(viewModel: CheckoutViewModel = hiltViewModel()) {
             onDeliveryNotes = viewModel::onDeliveryNotes,
             onKeepAsPickup = viewModel::onKeepAsPickup,
             onSaveAddress = viewModel::onSaveAddress,
+            onCustomerName = viewModel::onCustomerName,
+            onCustomerPhone = viewModel::onCustomerPhone,
+            onSaveCustomer = viewModel::onSaveCustomer,
+            onContinueGiftCard = viewModel::onContinueGiftCard,
+            onGiftAmountDigit = viewModel::onGiftAmountDigit,
+            onGiftAmountDigits = viewModel::onGiftAmountDigits,
+            onGiftAmountDelete = viewModel::onGiftAmountDelete,
+            onCity = viewModel::onCity,
+            onRegion = viewModel::onRegion,
+            onOpenPaymentLink = viewModel::onOpenPaymentLink,
+            onEditPaymentLink = viewModel::onEditPaymentLink,
+            onSavePaymentLinkDetails = viewModel::onSavePaymentLinkDetails,
         ),
         onSection = viewModel::onSection,
         menu = MenuActions(
@@ -133,14 +189,26 @@ fun CheckoutScreen(
     onOpenOrder: (OpenOrder) -> Unit,
     actions: CheckoutActions,
     queue: QueueActions,
+    payment: PaymentActions,
     overlay: OverlayActions,
     onSection: (KitchenSection) -> Unit,
     menu: MenuActions,
     board: BoardActions,
     onSettings: (SettingsState) -> Unit = {},
     onKitchenMode: (Boolean) -> Unit = {},
+    onPrintTicket: () -> Unit = {},
+    onPrintReceipt: () -> Unit = {},
+    effects: Flow<UiEffect> = emptyFlow(),
     modifier: Modifier = Modifier,
 ) {
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+    ObserveEffects(effects) { effect ->
+        if (effect is ShowMessage) {
+            scope.launch { snackbarHostState.showSnackbar(effect.text.asString(context)) }
+        }
+    }
     val title = when (state.section) {
         KitchenSection.Orders -> R.string.checkout_nav_orders
 
@@ -154,6 +222,7 @@ fun CheckoutScreen(
             CheckoutStep.Idle -> R.string.checkout_title
             CheckoutStep.Queue -> R.string.checkout_title
             CheckoutStep.Building -> R.string.checkout_new_order_title
+            CheckoutStep.Payment -> R.string.checkout_payment_title
             CheckoutStep.Confirmed -> R.string.checkout_confirmed_title
         }
     }
@@ -168,7 +237,7 @@ fun CheckoutScreen(
                     title = stringResource(title),
                     onOpenOrders = onOpenOrders,
                     onNewOrder = onNewOrder,
-                    ordersSelected = state.step != CheckoutStep.Building,
+                    ordersSelected = state.step != CheckoutStep.Building && state.step != CheckoutStep.Payment,
                     showActions = state.section == KitchenSection.Checkout,
                 )
                 if (!adaptive.usesTwoPane) {
@@ -205,9 +274,19 @@ fun CheckoutScreen(
 
                     KitchenSection.Checkout -> when (state.step) {
                         CheckoutStep.Idle -> IdleContent(state, onSearch, onNewOrder, onOpenOrder)
+
                         CheckoutStep.Queue -> QueueContent(state, queue)
+
                         CheckoutStep.Building -> BuilderContent(state, actions)
-                        CheckoutStep.Confirmed -> ConfirmationContent(state, onNewOrder)
+
+                        CheckoutStep.Payment -> PaymentContent(state, payment)
+
+                        CheckoutStep.Confirmed -> ConfirmationContent(
+                            state,
+                            onNewOrder,
+                            onPrintTicket = onPrintTicket,
+                            onPrintReceipt = onPrintReceipt,
+                        )
                     }
                 }
             }
@@ -218,6 +297,10 @@ fun CheckoutScreen(
         state.promptedMenuItem?.let { item ->
             UnavailableDialog(item.name, state.unavailableUntil, menu)
         }
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier.align(Alignment.BottomCenter).padding(AppTheme.spacing.lg),
+        )
     }
 }
 
@@ -225,8 +308,20 @@ fun CheckoutScreen(
 @Composable
 private fun CheckoutIdlePreview() {
     PreviewSurface {
-        CheckoutScreen(CheckoutUiState(), {
-        }, {}, {}, {}, emptyActions(), emptyQueue(), emptyOverlay(), {}, emptyMenuActions(), emptyBoard())
+        CheckoutScreen(
+            CheckoutUiState(),
+            {},
+            {},
+            {},
+            {},
+            emptyActions(),
+            emptyQueue(),
+            emptyPayment(),
+            emptyOverlay(),
+            {},
+            emptyMenuActions(),
+            emptyBoard(),
+        )
     }
 }
 
@@ -242,6 +337,7 @@ private fun CheckoutBuilderPreview() {
             {},
             emptyActions(),
             emptyQueue(),
+            emptyPayment(),
             emptyOverlay(),
             {},
             emptyMenuActions(),
@@ -253,6 +349,8 @@ private fun CheckoutBuilderPreview() {
 private fun emptyActions() = CheckoutActions({}, {}, {}, {}, { _, _ -> }, {}, {}, {}, {})
 
 private fun emptyQueue() = QueueActions({}, {}, {}, {}, {}, {}, {}, {})
+
+private fun emptyPayment() = PaymentActions({}, {}, {}, {}, {}, {}, {}, {}, {})
 
 private fun emptyOverlay() = OverlayActions({}, { _, _ -> }, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {})
 

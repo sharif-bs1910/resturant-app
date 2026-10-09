@@ -1,12 +1,19 @@
 package com.noshitechinc.restaurant.feature.checkout
 
+import androidx.lifecycle.viewModelScope
+import com.noshitechinc.restaurant.R
+import com.noshitechinc.restaurant.core.common.UiText
 import com.noshitechinc.restaurant.core.ui.BaseViewModel
+import com.noshitechinc.restaurant.core.ui.MessageTone
+import com.noshitechinc.restaurant.core.ui.ShowMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
 @HiltViewModel
 class CheckoutViewModel @Inject constructor() : BaseViewModel() {
@@ -26,11 +33,44 @@ class CheckoutViewModel @Inject constructor() : BaseViewModel() {
                 overlay = CheckoutOverlay.None,
                 boardDialog = BoardDialog.None,
                 canceledOrder = null,
-                lines = SampleCart,
-                channel = OrderChannel.InStore,
+                lines = emptyList(),
+                channel = OrderChannel.Phone,
                 fulfillment = Fulfillment.Pickup,
+                builderQuery = "",
                 giftAppliedCents = 0,
-                settlement = Settlement.Cash,
+                settlement = Settlement.Card,
+                customerName = "",
+                customerPhone = "",
+                customerDraftName = "",
+                customerDraftPhone = "",
+                street = "",
+                apt = "",
+                city = "",
+                region = "",
+                zip = "",
+                deliveryNotes = "",
+                addressLine = "",
+                addressDetail = "",
+                paidCents = 0,
+                tipOption = TipOption.None,
+                tipCustomDigits = "",
+            )
+        }
+    }
+
+    fun onBuilderSearch(value: String) {
+        _uiState.update { it.copy(builderQuery = value) }
+    }
+
+    /** Seeds the phone demo cart for builder / payment flows that start empty. */
+    fun onLoadPhoneDemoCart() {
+        _uiState.update {
+            it.copy(
+                lines = PhoneCart,
+                channel = OrderChannel.Phone,
+                fulfillment = Fulfillment.Pickup,
+                customerName = "Maya Rodriguez",
+                customerPhone = "(415) 555-0192",
             )
         }
     }
@@ -125,8 +165,303 @@ class CheckoutViewModel @Inject constructor() : BaseViewModel() {
 
     fun onPay() {
         _uiState.update { state ->
-            if (state.lines.isEmpty()) state else state.copy(overlay = CheckoutOverlay.Tender)
+            if (state.lines.isEmpty()) {
+                state
+            } else {
+                state.copy(
+                    step = CheckoutStep.Payment,
+                    overlay = CheckoutOverlay.None,
+                    payAmountMode = PayAmountMode.Full,
+                    customChargeDigits = "",
+                    cashTenderedDigits = "",
+                    selectedPayLineIds = emptySet(),
+                    settlement = Settlement.Card,
+                    paidCents = 0,
+                    pendingChargeCents = 0,
+                    giftAppliedCents = 0,
+                    tipOption = TipOption.None,
+                    tipCustomDigits = "",
+                    cardChargeCustom = false,
+                    deliveryApp = null,
+                    platformOrderId = "",
+                )
+            }
         }
+    }
+
+    fun onBackFromPayment() {
+        _uiState.update {
+            it.copy(
+                step = CheckoutStep.Building,
+                overlay = CheckoutOverlay.None,
+                customChargeDigits = "",
+                cashTenderedDigits = "",
+                paidCents = 0,
+                pendingChargeCents = 0,
+                giftAppliedCents = 0,
+                tipOption = TipOption.None,
+                tipCustomDigits = "",
+                cardChargeCustom = false,
+                deliveryApp = null,
+                platformOrderId = "",
+            )
+        }
+    }
+
+    fun onEditCustomer() {
+        _uiState.update {
+            it.copy(
+                overlay = CheckoutOverlay.Customer,
+                customerDraftName = it.customerName,
+                customerDraftPhone = it.customerPhone,
+            )
+        }
+    }
+
+    fun onCustomerName(value: String) {
+        _uiState.update { it.copy(customerDraftName = value) }
+    }
+
+    fun onCustomerPhone(value: String) {
+        _uiState.update { it.copy(customerDraftPhone = value) }
+    }
+
+    fun onSaveCustomer() {
+        _uiState.update {
+            it.copy(
+                customerName = it.customerDraftName.trim(),
+                customerPhone = it.customerDraftPhone.trim(),
+                overlay = CheckoutOverlay.None,
+            )
+        }
+    }
+
+    fun onPayAmountMode(mode: PayAmountMode) {
+        _uiState.update { state ->
+            state.copy(
+                payAmountMode = mode,
+                customChargeDigits = if (mode == PayAmountMode.Full) "" else state.customChargeDigits,
+                cardChargeCustom = false,
+                selectedPayLineIds = when (mode) {
+                    PayAmountMode.ByItems ->
+                        state.selectedPayLineIds.ifEmpty { state.lines.map { it.id }.toSet() }
+
+                    else -> emptySet()
+                },
+            )
+        }
+    }
+
+    fun onTogglePayLine(lineId: String) {
+        _uiState.update { state ->
+            val next = if (lineId in state.selectedPayLineIds) {
+                state.selectedPayLineIds - lineId
+            } else {
+                state.selectedPayLineIds + lineId
+            }
+            state.copy(selectedPayLineIds = next, customChargeDigits = "")
+        }
+    }
+
+    fun onSelectAllPayLines() {
+        _uiState.update { state ->
+            val allIds = state.lines.map { it.id }.toSet()
+            val next = if (state.selectedPayLineIds.containsAll(allIds) && allIds.isNotEmpty()) {
+                emptySet()
+            } else {
+                allIds
+            }
+            state.copy(selectedPayLineIds = next, customChargeDigits = "")
+        }
+    }
+
+    fun onClearItemCustomAmount() {
+        _uiState.update { it.copy(customChargeDigits = "", cardChargeCustom = false) }
+    }
+
+    fun onCardChargeCustom(enabled: Boolean) {
+        _uiState.update { state ->
+            val next = state.copy(
+                cardChargeCustom = enabled,
+                customChargeDigits = if (enabled) state.customChargeDigits else "",
+            )
+            if (state.settlement == Settlement.Cash && !enabled && next.chargeCents > 0) {
+                next.copy(cashTenderedDigits = next.chargeCents.toString())
+            } else {
+                next
+            }
+        }
+    }
+
+    fun onTipOption(option: TipOption) {
+        _uiState.update {
+            it.copy(
+                tipOption = option,
+                tipCustomDigits = if (option == TipOption.Custom) it.tipCustomDigits else "",
+            )
+        }
+    }
+
+    fun onTipDigit(digit: String) {
+        _uiState.update { state ->
+            if (state.tipOption != TipOption.Custom) return@update state
+            val next = (state.tipCustomDigits + digit.filter { it.isDigit() }).take(MaxAmountDigits)
+            state.copy(tipCustomDigits = next)
+        }
+    }
+
+    fun onTipDelete() {
+        _uiState.update { it.copy(tipCustomDigits = it.tipCustomDigits.dropLast(1)) }
+    }
+
+    fun onDeliveryApp(app: DeliveryApp) {
+        _uiState.update { it.copy(deliveryApp = app) }
+    }
+
+    fun onPlatformOrderId(value: String) {
+        _uiState.update { it.copy(platformOrderId = value) }
+    }
+
+    fun onAmountDigit(digit: String) {
+        _uiState.update { state ->
+            val allow = state.payAmountMode == PayAmountMode.Custom ||
+                state.payAmountMode == PayAmountMode.ByItems ||
+                (
+                    (state.settlement == Settlement.Card || state.settlement == Settlement.Cash) &&
+                        state.cardChargeCustom
+                    )
+            if (!allow) return@update state
+            val next = (state.customChargeDigits + digit.filter { it.isDigit() }).take(MaxAmountDigits)
+            state.copy(customChargeDigits = next)
+        }
+    }
+
+    fun onCustomAmountDigits(digits: String) {
+        _uiState.update { state ->
+            val allow = state.payAmountMode == PayAmountMode.Custom ||
+                state.payAmountMode == PayAmountMode.ByItems ||
+                (
+                    (state.settlement == Settlement.Card || state.settlement == Settlement.Cash) &&
+                        state.cardChargeCustom
+                    )
+            if (!allow) return@update state
+            state.copy(customChargeDigits = digits.filter { it.isDigit() }.take(MaxAmountDigits))
+        }
+    }
+
+    fun onTipAmountDigits(digits: String) {
+        _uiState.update { state ->
+            if (state.tipOption != TipOption.Custom) return@update state
+            state.copy(tipCustomDigits = digits.filter { it.isDigit() }.take(MaxAmountDigits))
+        }
+    }
+
+    fun onAmountDelete() {
+        _uiState.update { it.copy(customChargeDigits = it.customChargeDigits.dropLast(1)) }
+    }
+
+    fun onCashDigit(digit: String) {
+        _uiState.update { state ->
+            val next = (state.cashTenderedDigits + digit.filter { it.isDigit() }).take(MaxAmountDigits)
+            state.copy(cashTenderedDigits = next)
+        }
+    }
+
+    fun onCashAmountDigits(digits: String) {
+        _uiState.update {
+            it.copy(cashTenderedDigits = digits.filter { ch -> ch.isDigit() }.take(MaxAmountDigits))
+        }
+    }
+
+    fun onCashTenderExact() {
+        _uiState.update { state ->
+            val charge = state.chargeCents
+            state.copy(cashTenderedDigits = if (charge > 0) charge.toString() else "")
+        }
+    }
+
+    fun onCashTenderRoundUp() {
+        _uiState.update { state ->
+            val roundUp = nextCashRoundUpCents(state.chargeCents)
+            state.copy(cashTenderedDigits = if (roundUp > 0) roundUp.toString() else "")
+        }
+    }
+
+    fun onCashDelete() {
+        _uiState.update { it.copy(cashTenderedDigits = it.cashTenderedDigits.dropLast(1)) }
+    }
+
+    fun onCollectPayment() {
+        if (!tryStartPayment()) return
+        viewModelScope.launch {
+            val charge = _uiState.value.chargeCents.coerceAtLeast(0)
+            _uiState.update { state ->
+                val tendered = if (state.settlement == Settlement.Cash && state.cashTenderedDigits.isEmpty()) {
+                    charge.toString()
+                } else {
+                    state.cashTenderedDigits
+                }
+                state.copy(
+                    overlay = CheckoutOverlay.Processing,
+                    pendingChargeCents = charge,
+                    cashTenderedDigits = tendered,
+                )
+            }
+            delay(ProcessingDelayMs)
+            _uiState.update { state ->
+                val appliedCharge = state.pendingChargeCents.coerceAtLeast(charge)
+                val nextPaid = state.paidCents + appliedCharge
+                val remaining = (
+                    state.totalCents + state.tipCents - state.giftAppliedCents - nextPaid
+                    ).coerceAtLeast(0)
+                if (remaining <= 0) {
+                    state.copy(
+                        paidCents = nextPaid,
+                        pendingChargeCents = 0,
+                        step = CheckoutStep.Confirmed,
+                        overlay = CheckoutOverlay.None,
+                        customChargeDigits = "",
+                        cashTenderedDigits = "",
+                        selectedPayLineIds = emptySet(),
+                        cardChargeCustom = false,
+                        payAmountMode = PayAmountMode.Full,
+                    )
+                } else {
+                    val next = state.copy(
+                        paidCents = nextPaid,
+                        pendingChargeCents = 0,
+                        step = CheckoutStep.Payment,
+                        overlay = CheckoutOverlay.None,
+                        customChargeDigits = "",
+                        cashTenderedDigits = "",
+                        selectedPayLineIds = emptySet(),
+                        cardChargeCustom = false,
+                        payAmountMode = PayAmountMode.Full,
+                        tipOption = TipOption.None,
+                        tipCustomDigits = "",
+                    )
+                    if (next.settlement == Settlement.Cash && next.chargeCents > 0) {
+                        next.copy(cashTenderedDigits = next.chargeCents.toString())
+                    } else {
+                        next
+                    }
+                }
+            }
+        }
+    }
+
+    private fun tryStartPayment(): Boolean {
+        val state = _uiState.value
+        if (state.overlay == CheckoutOverlay.Processing) return false
+        if (state.pendingChargeCents > 0) return false
+        if (state.chargeCents <= 0) return false
+        if (state.settlement == Settlement.Cash &&
+            state.cashTenderedDigits.isNotEmpty() &&
+            state.cashTenderedCents < state.chargeCents
+        ) {
+            return false
+        }
+        return true
     }
 
     fun onSaveDraft() {
@@ -160,7 +495,27 @@ class CheckoutViewModel @Inject constructor() : BaseViewModel() {
     }
 
     fun onSettlement(settlement: Settlement) {
-        _uiState.update { it.copy(settlement = settlement) }
+        _uiState.update { state ->
+            val next = state.copy(
+                settlement = settlement,
+                deliveryApp = when (settlement) {
+                    Settlement.UberEats -> DeliveryApp.UberEats
+                    Settlement.DoorDash -> DeliveryApp.DoorDash
+                    Settlement.Grubhub -> DeliveryApp.Grubhub
+                    else -> null
+                },
+                cardChargeCustom = when (settlement) {
+                    Settlement.Card, Settlement.Cash -> state.cardChargeCustom
+                    else -> false
+                },
+                cashTenderedDigits = "",
+            )
+            if (settlement == Settlement.Cash && next.chargeCents > 0) {
+                next.copy(cashTenderedDigits = next.chargeCents.toString())
+            } else {
+                next
+            }
+        }
     }
 
     fun onRedeemGiftCard() {
@@ -193,27 +548,140 @@ class CheckoutViewModel @Inject constructor() : BaseViewModel() {
         }
     }
 
+    fun onContinueGiftCard() {
+        _uiState.update { state ->
+            val maxApply = minOf(GiftCardBalanceCents, state.dueCents.takeIf { it > 0 } ?: state.totalCents)
+            state.copy(
+                overlay = CheckoutOverlay.GiftAmount,
+                giftApplyDigits = maxApply.toString(),
+            )
+        }
+    }
+
+    fun onGiftAmountDigit(digit: String) {
+        _uiState.update { state ->
+            val next = (state.giftApplyDigits + digit.filter { it.isDigit() }).take(MaxAmountDigits)
+            state.copy(giftApplyDigits = next)
+        }
+    }
+
+    fun onGiftAmountDigits(digits: String) {
+        _uiState.update {
+            it.copy(giftApplyDigits = digits.filter { ch -> ch.isDigit() }.take(MaxAmountDigits))
+        }
+    }
+
+    fun onGiftAmountDelete() {
+        _uiState.update { it.copy(giftApplyDigits = it.giftApplyDigits.dropLast(1)) }
+    }
+
+    fun onPrintTicket() {
+        sendEffect(ShowMessage(UiText.Resource(R.string.checkout_print_ticket_queued), MessageTone.Success))
+    }
+
+    fun onPrintReceipt() {
+        sendEffect(ShowMessage(UiText.Resource(R.string.checkout_print_receipt_queued), MessageTone.Success))
+    }
+
     fun onApplyGiftCard() {
         _uiState.update { state ->
-            val applied = minOf(GiftCardBalanceCents, state.totalCents)
-            state.copy(giftAppliedCents = applied, overlay = CheckoutOverlay.Tender)
+            val maxApply = minOf(
+                GiftCardBalanceCents,
+                (state.totalCents + state.tipCents - state.paidCents).coerceAtLeast(0),
+            )
+            val applied = if (state.overlay == CheckoutOverlay.GiftAmount) {
+                state.giftApplyCents.coerceIn(0, maxApply)
+            } else {
+                maxApply
+            }
+            val remainingAfter = (
+                state.totalCents + state.tipCents - state.paidCents - applied
+                ).coerceAtLeast(0)
+            when {
+                remainingAfter <= 0 && state.step == CheckoutStep.Payment ->
+                    state.copy(
+                        giftAppliedCents = applied,
+                        giftApplyDigits = "",
+                        overlay = CheckoutOverlay.None,
+                        step = CheckoutStep.Confirmed,
+                        customChargeDigits = "",
+                        cashTenderedDigits = "",
+                        cardChargeCustom = false,
+                        payAmountMode = PayAmountMode.Full,
+                    )
+
+                state.step == CheckoutStep.Payment ->
+                    state.copy(
+                        giftAppliedCents = applied,
+                        giftApplyDigits = "",
+                        overlay = CheckoutOverlay.None,
+                        customChargeDigits = "",
+                        cashTenderedDigits = "",
+                        cardChargeCustom = false,
+                        payAmountMode = PayAmountMode.Full,
+                    )
+
+                else ->
+                    state.copy(
+                        giftAppliedCents = applied,
+                        giftApplyDigits = "",
+                        overlay = CheckoutOverlay.Tender,
+                    )
+            }
+        }
+    }
+
+    fun onOpenPaymentLink() {
+        _uiState.update { it.copy(overlay = CheckoutOverlay.PaymentLink) }
+    }
+
+    fun onEditPaymentLink() {
+        _uiState.update {
+            it.copy(
+                overlay = CheckoutOverlay.PaymentLinkEdit,
+                customerDraftName = it.customerName,
+                customerDraftPhone = it.customerPhone,
+            )
+        }
+    }
+
+    fun onSavePaymentLinkDetails() {
+        _uiState.update {
+            it.copy(
+                customerName = it.customerDraftName.trim().ifBlank { it.customerName },
+                customerPhone = it.customerDraftPhone.trim().ifBlank { it.customerPhone },
+                overlay = CheckoutOverlay.PaymentLink,
+            )
         }
     }
 
     fun onSendPaymentLink() {
-        _uiState.update { it.copy(step = CheckoutStep.Building, overlay = CheckoutOverlay.Saved) }
+        _uiState.update { it.copy(overlay = CheckoutOverlay.Saved) }
     }
 
     fun onClosePaymentSent() {
-        _uiState.update { it.copy(step = CheckoutStep.Confirmed, overlay = CheckoutOverlay.None) }
+        _uiState.update { it.copy(overlay = CheckoutOverlay.None) }
     }
 
     fun onBackToCart() {
-        _uiState.update { it.copy(overlay = CheckoutOverlay.None, draft = null) }
+        _uiState.update { state ->
+            when (state.overlay) {
+                CheckoutOverlay.PaymentLinkEdit -> state.copy(overlay = CheckoutOverlay.PaymentLink)
+                else -> state.copy(overlay = CheckoutOverlay.None, draft = null)
+            }
+        }
     }
 
     fun onBackToTender() {
-        _uiState.update { it.copy(overlay = CheckoutOverlay.Tender) }
+        _uiState.update { state ->
+            val overlay = when {
+                state.overlay == CheckoutOverlay.GiftAmount -> CheckoutOverlay.GiftCard
+                state.overlay == CheckoutOverlay.PaymentLinkEdit -> CheckoutOverlay.PaymentLink
+                state.step == CheckoutStep.Payment -> CheckoutOverlay.None
+                else -> CheckoutOverlay.Tender
+            }
+            state.copy(overlay = overlay)
+        }
     }
 
     fun onEditAddress() {
@@ -232,6 +700,14 @@ class CheckoutViewModel @Inject constructor() : BaseViewModel() {
         _uiState.update { it.copy(apt = value, addressField = AddressField.Apt) }
     }
 
+    fun onCity(value: String) {
+        _uiState.update { it.copy(city = value, addressField = AddressField.City) }
+    }
+
+    fun onRegion(value: String) {
+        _uiState.update { it.copy(region = value.take(2).uppercase(), addressField = AddressField.Region) }
+    }
+
     fun onZip(value: String) {
         _uiState.update { it.copy(zip = value.filter(Char::isDigit).take(MaxZip), addressField = AddressField.Zip) }
     }
@@ -247,7 +723,8 @@ class CheckoutViewModel @Inject constructor() : BaseViewModel() {
     fun onSaveAddress() {
         _uiState.update { state ->
             val line = if (state.apt.isBlank()) state.street else "${state.street}, ${state.apt}"
-            val detail = "Oakland ${state.zip} · ${state.deliveryNotes}"
+            val locality = listOf(state.city, state.region, state.zip).filter { it.isNotBlank() }.joinToString(" ")
+            val detail = listOf(locality, state.deliveryNotes).filter { it.isNotBlank() }.joinToString(" · ")
             state.copy(
                 addressLine = line,
                 addressDetail = detail,
@@ -472,12 +949,17 @@ class CheckoutViewModel @Inject constructor() : BaseViewModel() {
         _uiState.update { state ->
             val order = state.selectedOrder ?: return@update state
             state.copy(
-                step = CheckoutStep.Building,
+                step = CheckoutStep.Payment,
                 lines = order.toCart(),
                 channel = order.channel,
                 fulfillment = order.fulfillment,
                 orderNumber = order.number,
-                overlay = CheckoutOverlay.Tender,
+                overlay = CheckoutOverlay.None,
+                payAmountMode = PayAmountMode.Full,
+                customChargeDigits = "",
+                cashTenderedDigits = "",
+                settlement = Settlement.Card,
+                giftAppliedCents = 0,
             )
         }
     }
@@ -486,12 +968,15 @@ class CheckoutViewModel @Inject constructor() : BaseViewModel() {
         _uiState.update { state ->
             val order = state.selectedOrder ?: return@update state
             state.copy(
-                step = CheckoutStep.Building,
+                step = CheckoutStep.Payment,
                 lines = order.toCart(),
                 channel = order.channel,
                 fulfillment = order.fulfillment,
                 orderNumber = order.number,
                 overlay = CheckoutOverlay.GiftCard,
+                payAmountMode = PayAmountMode.Full,
+                customChargeDigits = "",
+                cashTenderedDigits = "",
             )
         }
     }
@@ -609,5 +1094,7 @@ class CheckoutViewModel @Inject constructor() : BaseViewModel() {
         const val MaxCardDigits = 12
         const val CardGroup = 4
         const val MaxZip = 5
+        const val MaxAmountDigits = 7
+        const val ProcessingDelayMs = 1_600L
     }
 }

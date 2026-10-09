@@ -549,11 +549,19 @@ private fun CanceledOrderContent(order: BoardOrder, onNewOrder: () -> Unit) {
                     .padding(AppTheme.spacing.lg),
                 verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.sm),
             ) {
-                RecapLine(stringResource(R.string.checkout_recap_channel), stringResource(R.string.checkout_phone))
-                RecapLine(stringResource(R.string.checkout_recap_fulfillment), stringResource(R.string.checkout_canceled), accent = true)
-                RecapLine(stringResource(R.string.checkout_recap_items), order.lines.sumOf { it.quantity }.toString())
-                RecapLine(stringResource(R.string.checkout_total), formatMoney(-order.totalCents), accent = true)
-                RecapLine(stringResource(R.string.checkout_recap_payment), stringResource(R.string.checkout_refunded))
+                MoneyRow(stringResource(R.string.checkout_recap_channel), stringResource(R.string.checkout_phone))
+                MoneyRow(
+                    stringResource(R.string.checkout_recap_fulfillment),
+                    stringResource(R.string.checkout_canceled),
+                    destructiveValue = true,
+                )
+                MoneyRow(stringResource(R.string.checkout_recap_items), order.lines.sumOf { it.quantity }.toString())
+                MoneyRow(
+                    stringResource(R.string.checkout_total),
+                    formatMoney(-order.totalCents),
+                    destructiveValue = true,
+                )
+                MoneyRow(stringResource(R.string.checkout_recap_payment), stringResource(R.string.checkout_refunded))
             }
             PillButton(stringResource(R.string.checkout_print_cancellation), {}, Modifier.fillMaxWidth(), filled = false)
             PillButton(stringResource(R.string.checkout_new_order), onNewOrder, Modifier.fillMaxWidth())
@@ -629,20 +637,6 @@ private fun BoardFieldInput(label: String, value: String, focused: Boolean, onVa
                     }
                 }
             },
-        )
-    }
-}
-
-@Composable
-private fun RecapLine(label: String, value: String, accent: Boolean = false) {
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-        Text(label, style = AppTheme.typography.bodyMedium, color = AppTheme.colors.textMuted)
-        Text(
-            value,
-            style = AppTheme.typography.bodyMedium,
-            color = if (accent) AppTheme.colors.destructive else AppTheme.colors.textPrimary,
-            maxLines = 1,
-            softWrap = false,
         )
     }
 }
