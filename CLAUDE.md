@@ -8,5 +8,6 @@ Scoped rules (apply when working in the matching paths):
 @.cursor/rules/impact-analysis.mdc
 @.cursor/rules/architecture-mvvm.mdc
 @.cursor/rules/ui-design-system.mdc
+@.cursor/rules/compose-reuse.mdc
 @.cursor/rules/networking.mdc
 @.cursor/rules/testing.mdc

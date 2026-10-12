@@ -29,16 +29,19 @@ import com.noshitechinc.restaurant.R
 import com.noshitechinc.restaurant.core.designsystem.preview.PreviewSurface
 import com.noshitechinc.restaurant.core.designsystem.preview.ScreenPreviews
 import com.noshitechinc.restaurant.core.designsystem.theme.AppTheme
+import com.noshitechinc.restaurant.feature.role.DeviceRole
 
 @Composable
 fun KitchenRail(
     section: KitchenSection = KitchenSection.Checkout,
     kitchenBusy: Boolean = false,
+    deviceRole: DeviceRole? = null,
     onSection: (KitchenSection) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val colors = AppTheme.colors
     val spacing = AppTheme.spacing
+    val posMode = deviceRole == DeviceRole.Pos
     Column(
         modifier = modifier
             .width(AppTheme.sizes.checkoutRailWidth)
@@ -65,6 +68,14 @@ fun KitchenRail(
             }
             RailItem(stringResource(R.string.checkout_nav_menu), section == KitchenSection.Menu) {
                 onSection(KitchenSection.Menu)
+            }
+            if (posMode) {
+                RailItem(stringResource(R.string.checkout_nav_reporting), section == KitchenSection.Reporting) {
+                    onSection(KitchenSection.Reporting)
+                }
+                RailItem(stringResource(R.string.checkout_nav_team), section == KitchenSection.Team) {
+                    onSection(KitchenSection.Team)
+                }
             }
             RailItem(stringResource(R.string.checkout_nav_settings), section == KitchenSection.Settings) {
                 onSection(KitchenSection.Settings)
@@ -226,7 +237,7 @@ fun PillButton(
     val colors = AppTheme.colors
     val shape = RoundedCornerShape(AppTheme.radius.pill)
     val background = when {
-        !enabled -> colors.primary.copy(alpha = 0.4f)
+        !enabled && filled -> colors.primary.copy(alpha = 0.4f)
         destructive -> colors.statusDanger
         filled -> colors.primary
         else -> colors.card
@@ -240,7 +251,11 @@ fun PillButton(
                 if (filled) {
                     Modifier
                 } else {
-                    Modifier.border(AppTheme.border.medium, colors.textPrimary, shape)
+                    Modifier.border(
+                        AppTheme.border.medium,
+                        if (enabled) colors.textPrimary else colors.textPrimary.copy(alpha = 0.24f),
+                        shape,
+                    )
                 },
             )
             .clickable(enabled = enabled, onClick = onClick)
@@ -251,6 +266,7 @@ fun PillButton(
             text = label,
             style = AppTheme.typography.labelLarge,
             color = when {
+                !enabled -> colors.textMuted
                 destructive -> colors.background
                 filled -> colors.card
                 else -> colors.textPrimary

@@ -14,7 +14,7 @@ class SelectRoleViewModelTest {
 
     @Test
     fun `continue does nothing until a role is selected`() = runTest {
-        val vm = SelectRoleViewModel()
+        val vm = SelectRoleViewModel(DeviceRoleStore())
         vm.effects.test {
             vm.onContinue()
             expectNoEvents()
@@ -24,12 +24,24 @@ class SelectRoleViewModelTest {
 
     @Test
     fun `selecting a role enables continue`() = runTest {
-        val vm = SelectRoleViewModel()
+        val vm = SelectRoleViewModel(DeviceRoleStore())
         vm.onSelect(DeviceRole.SelfService)
         assertEquals(DeviceRole.SelfService, vm.uiState.value.selected)
         vm.effects.test {
             vm.onContinue()
             assertEquals(OpenSignIn, awaitItem())
         }
+    }
+
+    @Test
+    fun `continue persists selected role`() = runTest {
+        val store = DeviceRoleStore()
+        val vm = SelectRoleViewModel(store)
+        vm.onSelect(DeviceRole.Pos)
+        vm.effects.test {
+            vm.onContinue()
+            assertEquals(OpenSignIn, awaitItem())
+        }
+        assertEquals(DeviceRole.Pos, store.role.value)
     }
 }

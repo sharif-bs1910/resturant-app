@@ -6,6 +6,7 @@ import com.noshitechinc.restaurant.core.common.UiText
 import com.noshitechinc.restaurant.core.ui.BaseViewModel
 import com.noshitechinc.restaurant.core.ui.MessageTone
 import com.noshitechinc.restaurant.core.ui.ShowMessage
+import com.noshitechinc.restaurant.feature.role.DeviceRoleStore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.delay
@@ -16,8 +17,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 @HiltViewModel
-class CheckoutViewModel @Inject constructor() : BaseViewModel() {
-    private val _uiState = MutableStateFlow(CheckoutUiState())
+class CheckoutViewModel @Inject constructor(deviceRoleStore: DeviceRoleStore) : BaseViewModel() {
+    private val _uiState = MutableStateFlow(CheckoutUiState(deviceRole = deviceRoleStore.role.value))
     val uiState: StateFlow<CheckoutUiState> = _uiState.asStateFlow()
     private var lineSerial = 0
 
@@ -482,12 +483,40 @@ class CheckoutViewModel @Inject constructor() : BaseViewModel() {
                 boardDialog = BoardDialog.None,
                 menuPromptId = null,
                 settings = it.settings.copy(dialog = SettingsDialog.None, detail = SettingsDetail.None, pin = ""),
+                team = it.team.copy(
+                    dialog = TeamDialog.None,
+                    editingId = null,
+                    menuForId = null,
+                    inviteRoleMenuOpen = false,
+                    editRoleMenuOpen = false,
+                ),
+                reporting = it.reporting.copy(pickerOpen = false),
             )
         }
     }
 
     fun onSettingsChange(next: SettingsState) {
         _uiState.update { it.copy(settings = next) }
+    }
+
+    fun onTeamChange(next: TeamState) {
+        val previous = _uiState.value.team
+        val invited = next.members.firstOrNull { member ->
+            member.inviteSent && previous.members.none { it.id == member.id }
+        }
+        _uiState.update { it.copy(team = next) }
+        if (invited != null) {
+            sendEffect(
+                ShowMessage(
+                    UiText.Resource(R.string.team_invite_sent_toast, listOf(invited.email)),
+                    MessageTone.Success,
+                ),
+            )
+        }
+    }
+
+    fun onReportingChange(next: ReportingState) {
+        _uiState.update { it.copy(reporting = next) }
     }
 
     fun onKitchenMode(busy: Boolean) {
@@ -581,6 +610,10 @@ class CheckoutViewModel @Inject constructor() : BaseViewModel() {
 
     fun onPrintReceipt() {
         sendEffect(ShowMessage(UiText.Resource(R.string.checkout_print_receipt_queued), MessageTone.Success))
+    }
+
+    fun onExportReport() {
+        sendEffect(ShowMessage(UiText.Resource(R.string.reporting_export_toast)))
     }
 
     fun onApplyGiftCard() {

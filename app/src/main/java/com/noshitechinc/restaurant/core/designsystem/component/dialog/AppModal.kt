@@ -39,7 +39,7 @@ fun AppModalLayout(
 ) {
     Surface(
         shape = RoundedCornerShape(AppTheme.radius.xl),
-        color = AppTheme.colors.surface,
+        color = AppTheme.colors.card,
         modifier = modifier.widthIn(max = AppTheme.sizes.dialogMaxWidth),
     ) {
         Column(

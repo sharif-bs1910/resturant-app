@@ -59,6 +59,7 @@ Dependency direction: `feature` → `domain` ← `data`; `core/*` is usable by a
 - [Impact analysis](.cursor/rules/impact-analysis.mdc): contracts, shared types, tokens, shared component APIs and build config need an approved impact analysis before any edit.
 - [Architecture (MVVM)](.cursor/rules/architecture-mvvm.mdc): layering, `XxxRoute`/`XxxScreen` split, `XxxUiState` + `LoadState`, effects and `launchSubmit` through `BaseViewModel`.
 - [UI design system](.cursor/rules/ui-design-system.mdc): `AppTheme.*` tokens only, reuse components, previews for every variant and state, long-content and adaptive rules.
+- [Compose reuse](.cursor/rules/compose-reuse.mdc): search design-system first, extract shared/feature helpers, keep Compose files small (~250 lines), no duplicated fields/dialogs/scrims.
 - [Networking](.cursor/rules/networking.mdc): `safeApiCall { }` in repositories, DTO → domain mappers, `NO_AUTH_HEADER`, no token logging, API registry.
 - [Testing](.cursor/rules/testing.mdc): JUnit4 + MockK + Turbine, `MainDispatcherRule`, fakes, MockWebServer, Compose tests by test tag.
 - Previews go at the bottom of the file.

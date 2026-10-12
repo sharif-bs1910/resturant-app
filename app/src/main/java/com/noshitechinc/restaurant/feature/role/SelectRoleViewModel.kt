@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.update
 data object OpenSignIn : UiEffect
 
 @HiltViewModel
-class SelectRoleViewModel @Inject constructor() : BaseViewModel() {
+class SelectRoleViewModel @Inject constructor(private val deviceRoleStore: DeviceRoleStore) : BaseViewModel() {
     private val _uiState = MutableStateFlow(SelectRoleUiState())
     val uiState: StateFlow<SelectRoleUiState> = _uiState.asStateFlow()
 
@@ -21,6 +21,8 @@ class SelectRoleViewModel @Inject constructor() : BaseViewModel() {
     }
 
     fun onContinue() {
-        if (_uiState.value.selected != null) sendEffect(OpenSignIn)
+        val selected = _uiState.value.selected ?: return
+        deviceRoleStore.setRole(selected)
+        sendEffect(OpenSignIn)
     }
 }

@@ -1,0 +1,53 @@
+---
+description: Keep Compose UI small by reusing design-system components and splitting large feature files
+globs: app/src/main/java/**/feature/**,app/src/main/java/**/core/designsystem/**,app/src/main/java/**/core/ui/**
+alwaysApply: false
+---
+
+# Compose reuse (clean UI)
+
+Prefer shared building blocks over one-off layouts pasted into large feature files.
+
+## Search before you build
+
+Before writing a new button, field, dialog, row, badge, card or scrim:
+
+1. Search `core/designsystem/component/` (`button/`, `input/`, `dialog/`, `row/`, `selection/`, `card/`, …).
+2. Search `core/ui/` for error/load scaffolds.
+3. Search the current `feature/<name>/` for an existing private composable or chrome helper (e.g. `PillButton`, dialog hosts).
+
+Reuse what exists. Only invent a new primitive when nothing fits.
+
+## Where code lives
+
+| Kind of UI | Put it in |
+|---|---|
+| Used (or clearly needed) in 2+ features | `core/designsystem/component/<group>/` via `build-ui-component` skill; public API change → impact analysis |
+| Feature-only, used in 2+ places in that feature | private/internal composable in a focused file under `feature/<name>/` |
+| One screen, one use | private composable in that screen’s file — keep it short |
+
+Never copy-paste the same `BasicTextField` / scrim / confirm-footer block across files. Extract once.
+
+## File size and split
+
+- Aim for **~250 lines** per Compose file; hard stop around **400**. If you exceed that, split before adding more UI.
+- Screen shell stays in `XxxScreen.kt` / `XxxRoute`; move sections to siblings, e.g. `CheckoutTeam.kt`, `TeamInviteForm.kt`, `TeamDialogs.kt`.
+- Keep pure state/helpers in non-Compose files (`TeamState.kt`, not inside the Screen).
+- One public entry composable per file when practical; private helpers may share the file until it grows past the limit.
+
+## Prefer existing primitives (examples)
+
+- Buttons → `AppButton` / `AppIconButton` (or the feature’s shared chrome button if that is the established pattern).
+- Text fields → `AppTextField`, `NumericField`, `SearchField`, …
+- Confirm / destructive → `ConfirmationDialog` + `AppModal`.
+- Rows / tags → `ListRow`, `SettingsRow`, `AppTag`, `StatusBadge`.
+
+Do **not** reimplement modal scrims, labeled fields, or primary/secondary action rows inline when a shared component already covers them.
+
+## Composition checklist (before finishing a UI change)
+
+- [ ] No new duplicate of an existing design-system or feature helper
+- [ ] New shared look/feel was extracted (or an existing component was extended) instead of forked
+- [ ] Files stay under the size guideline, or were split in the same change
+- [ ] Previews cover the new extracted composable’s variants
+- [ ] `scripts/ai-hooks/design-lint-check.sh` is clean on touched paths

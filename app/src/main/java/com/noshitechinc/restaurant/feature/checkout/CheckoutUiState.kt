@@ -1,5 +1,7 @@
 package com.noshitechinc.restaurant.feature.checkout
 
+import com.noshitechinc.restaurant.feature.role.DeviceRole
+
 enum class CheckoutStep {
     Idle,
     Queue,
@@ -12,6 +14,8 @@ enum class KitchenSection {
     Checkout,
     Orders,
     Menu,
+    Reporting,
+    Team,
     Settings,
     Status,
 }
@@ -63,6 +67,7 @@ enum class BoardField {
 }
 
 data class CheckoutUiState(
+    val deviceRole: DeviceRole? = null,
     val section: KitchenSection = KitchenSection.Checkout,
     val step: CheckoutStep = CheckoutStep.Idle,
     val overlay: CheckoutOverlay = CheckoutOverlay.None,
@@ -131,6 +136,8 @@ data class CheckoutUiState(
     val menuPromptId: String? = null,
     val unavailableUntil: UnavailableUntil = UnavailableUntil.EndOfDay,
     val settings: SettingsState = SettingsState(),
+    val team: TeamState = TeamState(),
+    val reporting: ReportingState = ReportingState(),
     val kitchenBusy: Boolean = false,
 ) {
     val subtotalCents: Int = subtotalCents(lines)

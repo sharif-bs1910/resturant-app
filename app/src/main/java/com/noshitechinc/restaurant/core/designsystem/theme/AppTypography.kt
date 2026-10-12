@@ -68,7 +68,7 @@ private fun style(
 val DefaultAppTypography = AppTypography(
     displayLarge = style(Fraunces, 56, 54, FontWeight.SemiBold, letterSpacingEm = -0.025f),
     headlineLarge = style(Inter, 40, 42, FontWeight.ExtraBold, letterSpacingEm = -0.025f),
-    headlineMedium = style(Fraunces, 44, 46, FontWeight.SemiBold, letterSpacingEm = -0.015f),
+    headlineMedium = style(Fraunces, 36, 40, FontWeight.SemiBold, letterSpacingEm = -0.02f),
     headlineSmall = style(Inter, 24, 29, FontWeight.Bold, letterSpacingEm = -0.015f),
     titleLarge = style(Inter, 22, 28, FontWeight.SemiBold),
     titleMedium = style(Inter, 18, 24, FontWeight.SemiBold),

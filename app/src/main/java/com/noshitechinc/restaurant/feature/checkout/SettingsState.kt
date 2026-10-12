@@ -12,6 +12,8 @@ enum class SettingsDetail { None, Printer, Wifi }
 enum class SettingsDialog {
     None,
     RemoveZone,
+    AddTender,
+    RemoveTender,
     Pin,
     ClockedOut,
     ClockedIn,
@@ -24,6 +26,8 @@ enum class SettingsDialog {
 }
 
 data class DeliveryZone(val id: String, val name: String, val fromMi: String, val toMi: String, val fee: String)
+
+data class DeliveryTender(val id: String, val name: String)
 
 data class DayHours(val fullRes: Int, val shortRes: Int, val open: Boolean, val opens: String, val closes: String)
 
@@ -74,6 +78,9 @@ data class SettingsState(
     val deliveryFee: String = "3.99",
     val zones: List<DeliveryZone> = DefaultZones,
     val pendingZoneId: String? = null,
+    val tenders: List<DeliveryTender> = DefaultTenders,
+    val pendingTenderId: String? = null,
+    val tenderDraftName: String = "",
     val acceptPickup: Boolean = true,
     val acceptDelivery: Boolean = true,
     val allowScheduled: Boolean = true,
@@ -105,6 +112,16 @@ private val DefaultZones = listOf(
     DeliveryZone("zone-a", "Zone A", "0", "2", "2.99"),
     DeliveryZone("zone-b", "Zone B", "2", "4", "4.99"),
 )
+
+private val DefaultTenders = listOf(
+    DeliveryTender("uber-eats", "Uber Eats"),
+    DeliveryTender("doordash", "Doordash"),
+)
+
+internal const val MaxDeliveryTenders = 3
+
+val SettingsState.canAddTender: Boolean
+    get() = tenders.size < MaxDeliveryTenders
 
 private val DefaultStoreDays = listOf(
     DayHours(R.string.settings_mon, R.string.settings_short_mon, true, "11:00 AM", "9:00 PM"),
@@ -177,6 +194,25 @@ fun SettingsState.withAddedZone(): SettingsState {
 
 fun SettingsState.withoutPendingZone(): SettingsState =
     copy(zones = zones.filter { it.id != pendingZoneId }, dialog = SettingsDialog.None, pendingZoneId = null)
+
+fun SettingsState.openAddTender(): SettingsState = copy(dialog = SettingsDialog.AddTender, tenderDraftName = "")
+
+fun SettingsState.withAddedTender(): SettingsState {
+    val name = tenderDraftName.trim()
+    if (name.isEmpty() || !canAddTender) return copy(dialog = SettingsDialog.None, tenderDraftName = "")
+    val id = name.lowercase().replace(Regex("[^a-z0-9]+"), "-").trim('-').ifBlank { "tender-${tenders.size}" }
+    return copy(
+        tenders = tenders + DeliveryTender(id = id, name = name),
+        dialog = SettingsDialog.None,
+        tenderDraftName = "",
+    )
+}
+
+fun SettingsState.withoutPendingTender(): SettingsState = copy(
+    tenders = tenders.filter { it.id != pendingTenderId },
+    dialog = SettingsDialog.None,
+    pendingTenderId = null,
+)
 
 fun groupedHours(days: List<DayHours>): List<List<DayHours>> {
     if (days.isEmpty()) return emptyList()

@@ -72,6 +72,8 @@ fun SettingsDialogHost(state: CheckoutUiState, onChange: (SettingsState) -> Unit
         Box(Modifier.clickable(onClick = {})) {
             when (settings.dialog) {
                 SettingsDialog.RemoveZone -> RemoveZoneDialog(settings, onChange)
+                SettingsDialog.AddTender -> AddTenderDialog(settings, onChange)
+                SettingsDialog.RemoveTender -> RemoveTenderDialog(settings, onChange)
                 SettingsDialog.Pin -> PinDialog(settings, onChange)
                 SettingsDialog.ClockedOut -> ClockResultDialog(settings, clockedOut = true, onChange)
                 SettingsDialog.ClockedIn -> ClockResultDialog(settings, clockedOut = false, onChange)
@@ -185,5 +187,57 @@ private fun SettingsRemoveZonePreview() {
                 settings = SettingsState(dialog = SettingsDialog.RemoveZone, pendingZoneId = "zone-b"),
             ),
         ) {}
+    }
+}
+
+@ScreenPreviews
+@Composable
+private fun SettingsDeliveryTendersPreview() {
+    PreviewSurface {
+        SettingsContent(
+            CheckoutUiState(
+                section = KitchenSection.Settings,
+                settings = SettingsState(tab = SettingsTab.Delivery),
+            ),
+            {},
+        )
+    }
+}
+
+@ScreenPreviews
+@Composable
+private fun SettingsAddTenderPreview() {
+    PreviewSurface {
+        SettingsDialogHost(
+            CheckoutUiState(
+                section = KitchenSection.Settings,
+                settings = SettingsState(
+                    tab = SettingsTab.Delivery,
+                    dialog = SettingsDialog.AddTender,
+                    tenderDraftName = "Grubhub",
+                ),
+            ),
+        ) {}
+    }
+}
+
+@ScreenPreviews
+@Composable
+private fun SettingsTendersMaxPreview() {
+    PreviewSurface {
+        SettingsContent(
+            CheckoutUiState(
+                section = KitchenSection.Settings,
+                settings = SettingsState(
+                    tab = SettingsTab.Delivery,
+                    tenders = listOf(
+                        DeliveryTender("uber-eats", "Uber Eats"),
+                        DeliveryTender("doordash", "Doordash"),
+                        DeliveryTender("grubhub", "Grubhub"),
+                    ),
+                ),
+            ),
+            {},
+        )
     }
 }

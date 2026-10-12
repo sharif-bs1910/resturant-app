@@ -30,6 +30,7 @@ import com.noshitechinc.restaurant.core.ui.ObserveEffects
 import com.noshitechinc.restaurant.core.ui.ShowMessage
 import com.noshitechinc.restaurant.core.ui.UiEffect
 import com.noshitechinc.restaurant.core.ui.asString
+import com.noshitechinc.restaurant.feature.role.DeviceRole
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.launch
@@ -46,6 +47,9 @@ fun CheckoutRoute(viewModel: CheckoutViewModel = hiltViewModel()) {
         onOpenOrder = viewModel::onOpenOrder,
         onPrintTicket = viewModel::onPrintTicket,
         onPrintReceipt = viewModel::onPrintReceipt,
+        onExportReport = viewModel::onExportReport,
+        onTeam = viewModel::onTeamChange,
+        onReporting = viewModel::onReportingChange,
         actions = CheckoutActions(
             onCategory = viewModel::onCategory,
             onChannel = viewModel::onChannel,
@@ -198,12 +202,16 @@ fun CheckoutScreen(
     onKitchenMode: (Boolean) -> Unit = {},
     onPrintTicket: () -> Unit = {},
     onPrintReceipt: () -> Unit = {},
+    onExportReport: () -> Unit = {},
+    onTeam: (TeamState) -> Unit = {},
+    onReporting: (ReportingState) -> Unit = {},
     effects: Flow<UiEffect> = emptyFlow(),
     modifier: Modifier = Modifier,
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+    val posMode = state.deviceRole == DeviceRole.Pos
     ObserveEffects(effects) { effect ->
         if (effect is ShowMessage) {
             scope.launch { snackbarHostState.showSnackbar(effect.text.asString(context)) }
@@ -213,6 +221,10 @@ fun CheckoutScreen(
         KitchenSection.Orders -> R.string.checkout_nav_orders
 
         KitchenSection.Menu -> R.string.checkout_nav_menu
+
+        KitchenSection.Reporting -> R.string.checkout_nav_reporting
+
+        KitchenSection.Team -> R.string.checkout_nav_team
 
         KitchenSection.Settings -> R.string.checkout_nav_settings
 
@@ -230,7 +242,12 @@ fun CheckoutScreen(
     Box(modifier.fillMaxSize().background(AppTheme.colors.background)) {
         Row(Modifier.fillMaxSize()) {
             if (adaptive.usesTwoPane) {
-                KitchenRail(section = state.section, kitchenBusy = state.kitchenBusy, onSection = onSection)
+                KitchenRail(
+                    section = state.section,
+                    kitchenBusy = state.kitchenBusy,
+                    deviceRole = state.deviceRole,
+                    onSection = onSection,
+                )
             }
             Column(Modifier.weight(1f)) {
                 CheckoutTopBar(
@@ -255,6 +272,14 @@ fun CheckoutScreen(
                         CheckoutChip(stringResource(R.string.checkout_nav_menu), state.section == KitchenSection.Menu) {
                             onSection(KitchenSection.Menu)
                         }
+                        if (posMode) {
+                            CheckoutChip(stringResource(R.string.checkout_nav_reporting), state.section == KitchenSection.Reporting) {
+                                onSection(KitchenSection.Reporting)
+                            }
+                            CheckoutChip(stringResource(R.string.checkout_nav_team), state.section == KitchenSection.Team) {
+                                onSection(KitchenSection.Team)
+                            }
+                        }
                         CheckoutChip(stringResource(R.string.checkout_nav_settings), state.section == KitchenSection.Settings) {
                             onSection(KitchenSection.Settings)
                         }
@@ -267,6 +292,10 @@ fun CheckoutScreen(
                     KitchenSection.Orders -> OrderBoardContent(state, board)
 
                     KitchenSection.Menu -> MenuContent(state, menu)
+
+                    KitchenSection.Reporting -> ReportingContent(state, onReporting, onExportReport)
+
+                    KitchenSection.Team -> TeamContent(state, onTeam)
 
                     KitchenSection.Settings -> SettingsContent(state, onSettings)
 
@@ -294,6 +323,7 @@ fun CheckoutScreen(
         CheckoutOverlayHost(state, overlay)
         if (state.section == KitchenSection.Orders) BoardDialogHost(state, board)
         if (state.section == KitchenSection.Settings) SettingsDialogHost(state, onSettings)
+        if (state.section == KitchenSection.Team) TeamDialogHost(state, onTeam)
         state.promptedMenuItem?.let { item ->
             UnavailableDialog(item.name, state.unavailableUntil, menu)
         }
