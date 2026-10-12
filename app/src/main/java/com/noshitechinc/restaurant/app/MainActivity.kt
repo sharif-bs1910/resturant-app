@@ -1,6 +1,7 @@
 package com.noshitechinc.restaurant.app
 
 import android.os.Bundle
+import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -26,10 +27,11 @@ class MainActivity : ComponentActivity() {
     lateinit var sessionManager: SessionManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        installSplashScreen()
+        installSplashScreen().setOnExitAnimationListener { splash -> splash.remove() }
         super.onCreate(savedInstanceState)
         requestedOrientation = OrientationPolicy.requestedOrientation(resources.configuration.smallestScreenWidthDp)
         enableEdgeToEdge()
+        window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
         setContent {
             val isOnline by networkMonitor.isOnline.collectAsStateWithLifecycle()
             AppTheme {

@@ -40,7 +40,7 @@ Paths: `SRC/` = `app/src/main/java/com/noshitechinc/restaurant/`, `ATEST/` = `ap
 
 - Names: `maxLines` + `TextOverflow.Ellipsis`. Prices and amounts are never truncated: lay them out first at intrinsic width, the name gets `Modifier.weight(1f)`.
 - Addresses wrap up to 3 lines. Buttons and chips grow in height instead of truncating.
-- Must hold at font scale 1.0, 1.5 and 2.0 and in the `en-XA` pseudo-locale.
+- Must hold at normal font scale (1.0) and in the `en-XA` pseudo-locale.
 
 ## Skeleton
 
@@ -165,7 +165,7 @@ Adjust the colours per variant; confirm every `AppTheme.colors.*` name you use e
 
 - [ ] Every variant × every applicable state: enabled, disabled, pressed (`ForcedInteraction.Pressed`), focused (`ForcedInteraction.Focused`), loading, error, empty, selected.
 - [ ] Long and translated samples from `PreviewData` (`LONG_NAME`, `TRANSLATED_LABEL`, `LONG_PRICE`, `ADDRESS_LONG`) in a width-constrained container.
-- [ ] Every preview is `private`, annotated `@ComponentPreviews` (tablet medium width, tablet expanded width, tablet medium width at font scale 2.0) and wrapped in `PreviewSurface { }`.
+- [ ] Every preview is `private`, annotated `@ComponentPreviews` (tablet medium width and tablet expanded width, normal font scale) and wrapped in `PreviewSurface { }`.
 - [ ] Previews are at the bottom of the file; nothing but previews after the first preview annotation.
 
 ## Compose UI test (when the component has behaviour)

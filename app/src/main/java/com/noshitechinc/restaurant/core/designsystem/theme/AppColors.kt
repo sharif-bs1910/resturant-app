@@ -26,6 +26,7 @@ data class AppColors(
     val textDisabled: Color,
     val disabledContainer: Color,
     val destructive: Color,
+    val statusDanger: Color,
     val onDestructive: Color,
     val destructivePressed: Color,
     val destructiveContainer: Color,
@@ -43,6 +44,8 @@ data class AppColors(
     val onNeutralContainer: Color,
     val focusRing: Color,
     val scrim: Color,
+    val card: Color,
+    val textMuted: Color,
 )
 
 val LightAppColors = AppColors(
@@ -67,6 +70,7 @@ val LightAppColors = AppColors(
     textDisabled = Color(0xFFA8A29E),
     disabledContainer = Color(0xFFE7E5E4),
     destructive = Color(0xFFB91C1C),
+    statusDanger = Color(0xFF8B3A1F),
     onDestructive = Color(0xFFFFFFFF),
     destructivePressed = Color(0xFF991B1B),
     destructiveContainer = Color(0xFFFEE2E2),
@@ -84,4 +88,6 @@ val LightAppColors = AppColors(
     onNeutralContainer = Color(0xFF44403C),
     focusRing = Color(0xFFFF5A3C),
     scrim = Color(0x99000000),
+    card = Color(0xFFFFFFFF),
+    textMuted = Color(0xFF6A6664),
 )

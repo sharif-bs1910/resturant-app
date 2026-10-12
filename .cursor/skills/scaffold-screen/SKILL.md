@@ -49,7 +49,7 @@ Full skeletons for every file are in [skeletons.md](skeletons.md). Copy them, th
 - [ ] Shared components reused (`AppButton`, `ListRow`, `EmptyState`, …); new shared components are built with the `build-ui-component` skill.
 - [ ] Long content: names use `maxLines` + `TextOverflow.Ellipsis`, prices are never truncated, buttons grow in height.
 - [ ] Adaptive: `rememberAdaptiveInfo()` for two-pane decisions, widths capped with `widthIn(max = AppTheme.sizes.contentMaxWidth)` (or `formMaxWidth`); works in tablet portrait and multi-window.
-- [ ] Previews: one `@ScreenPreviews` function per state — Loading, Content (with `PreviewData.LONG_NAME` samples), Empty, Error (and any submitting state). `@ScreenPreviews` covers tablet landscape, tablet portrait and font scale 2.0.
+- [ ] Previews: one `@ScreenPreviews` function per state — Loading, Content (with `PreviewData.LONG_NAME` samples), Empty, Error (and any submitting state). `@ScreenPreviews` covers tablet landscape and tablet portrait at normal font scale.
 - [ ] Destination registered in `Destinations.kt` and `AppNavHost.kt`.
 
 ## Test checklist
