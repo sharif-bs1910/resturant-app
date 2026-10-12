@@ -67,7 +67,14 @@ data class ModifierOption(val id: String, @param:StringRes val labelRes: Int, va
 
 data class ModifierGroup(val id: String, val titleRes: Int, val single: Boolean, val options: List<ModifierOption>)
 
-data class CartLine(val id: String, val name: String, val unitCents: Int, val quantity: Int)
+data class CartLine(
+    val id: String,
+    val name: String,
+    val unitCents: Int,
+    val quantity: Int,
+    val selectedModifierIds: Set<String> = emptySet(),
+    val note: String = "",
+)
 
 data class OpenOrder(
     val number: String,
@@ -99,8 +106,15 @@ val MenuCatalog = listOf(
 )
 
 val SampleCart = listOf(
-    CartLine("line-spicy", "Spicy Tonkotsu", 1_450, 2),
-    CartLine("line-gyoza", "Pork Gyoza", 700, 1),
+    CartLine(
+        "line-spicy",
+        "Spicy Tonkotsu",
+        1_450,
+        2,
+        selectedModifierIds = setOf("size-medium", "crust-thin"),
+        note = "No green onions",
+    ),
+    CartLine("line-gyoza", "Pork Gyoza", 700, 1, selectedModifierIds = setOf("size-small")),
     CartLine("line-matcha", "Matcha Lemonade", 500, 1),
 )
 

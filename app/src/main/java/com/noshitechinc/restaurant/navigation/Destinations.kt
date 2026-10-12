@@ -18,4 +18,7 @@ data object SelectRoleDestination
 data object CheckoutDestination
 
 @Serializable
+data object SelfServiceDestination
+
+@Serializable
 data object HomeDestination

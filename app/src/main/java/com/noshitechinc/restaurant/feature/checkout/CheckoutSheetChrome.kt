@@ -97,10 +97,13 @@ fun NoteField(value: String, onValue: (String) -> Unit) {
         textStyle = AppTheme.typography.bodyMedium.copy(color = AppTheme.colors.textPrimary),
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(min = AppTheme.sizes.inputHeight)
+            .heightIn(min = AppTheme.sizes.minTouchTarget)
             .clip(shape)
-            .border(AppTheme.border.thin, AppTheme.colors.textPrimary.copy(alpha = 0.14f), shape)
-            .padding(AppTheme.spacing.md),
+            .border(AppTheme.border.thin, AppTheme.colors.textPrimary, shape)
+            .padding(
+                horizontal = AppTheme.spacing.md + AppTheme.spacing.xxs,
+                vertical = AppTheme.spacing.md,
+            ),
         decorationBox = { inner ->
             if (value.isEmpty()) {
                 Text(stringResource(R.string.checkout_note_hint), style = AppTheme.typography.bodyMedium, color = AppTheme.colors.textMuted)

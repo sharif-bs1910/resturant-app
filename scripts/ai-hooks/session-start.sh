@@ -12,6 +12,7 @@ else
   status="WARNING: context repo not found at $ctx. Ask the user where it is before doing any work."
 fi
 
+figma_cache="$(project_dir)/.ai/figma-cache"
 message="AI-DLC session bootstrap — Noshitech Restaurant (Android code repo).
 $status
 Before any work, read these Tier-1 hot files in order:
@@ -19,7 +20,8 @@ Before any work, read these Tier-1 hot files in order:
 2. $ctx/PROJECT-INDEX.md
 3. $ctx/.ai/context/project-overview.md
 4. $ctx/.ai/AI-ASSISTANT-RULES.md
-Then read ./AGENTS.md in this repo. Summarize the current phase, the task and the constraints that apply, and get the user's confirmation before editing code. One task per chat."
+Then read ./AGENTS.md in this repo. Summarize the current phase, the task and the constraints that apply, and get the user's confirmation before editing code. One task per chat.
+Figma MCP cache: first live call for a node is saved under $figma_cache/{fileKey}/{nodeId}/. On later validations, prefer reading that cache (hooks deny duplicate MCP calls). Force refresh with tool input \"forceRefresh\": true or FIGMA_CACHE_BYPASS=1."
 
 if [[ "$HOOK_SOURCE" == "claude" ]]; then
   jq -n --arg m "$message" '{hookSpecificOutput: {hookEventName: "SessionStart", additionalContext: $m}}'

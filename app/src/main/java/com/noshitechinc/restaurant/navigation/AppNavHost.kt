@@ -11,6 +11,7 @@ import com.noshitechinc.restaurant.feature.checkout.CheckoutRoute
 import com.noshitechinc.restaurant.feature.home.HomeRoute
 import com.noshitechinc.restaurant.feature.pairing.PairingRoute
 import com.noshitechinc.restaurant.feature.role.SelectRoleRoute
+import com.noshitechinc.restaurant.feature.selfservice.SelfServiceRoute
 import com.noshitechinc.restaurant.feature.signin.SignInRoute
 import com.noshitechinc.restaurant.feature.splash.SplashRoute
 import kotlinx.coroutines.flow.Flow
@@ -43,14 +44,16 @@ fun AppNavHost(sessionEnded: Flow<Unit>, modifier: Modifier = Modifier, navContr
         }
         composable<SignInDestination> {
             SignInRoute(
-                onSignedIn = {
-                    navController.navigate(CheckoutDestination) {
+                onSignedIn = { selfService ->
+                    val destination = if (selfService) SelfServiceDestination else CheckoutDestination
+                    navController.navigate(destination) {
                         popUpTo(PairingDestination) { inclusive = true }
                     }
                 },
             )
         }
         composable<CheckoutDestination> { CheckoutRoute() }
+        composable<SelfServiceDestination> { SelfServiceRoute() }
         composable<HomeDestination> { HomeRoute() }
     }
 }

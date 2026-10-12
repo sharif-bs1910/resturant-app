@@ -1,5 +1,6 @@
 .ai/.session/
 .ai/.tools/
+.ai/figma-cache/
 .gradle/
 .kotlin/
 build/

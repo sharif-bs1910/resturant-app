@@ -23,6 +23,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import com.noshitechinc.restaurant.R
@@ -172,7 +173,15 @@ fun CheckoutTopBar(title: String, onOpenOrders: () -> Unit, onNewOrder: () -> Un
 }
 
 @Composable
-fun CheckoutChip(label: String, selected: Boolean, modifier: Modifier = Modifier, accent: Boolean = false, onClick: () -> Unit) {
+fun CheckoutChip(
+    label: String,
+    selected: Boolean,
+    modifier: Modifier = Modifier,
+    accent: Boolean = false,
+    sheet: Boolean = false,
+    hug: Boolean = false,
+    onClick: () -> Unit,
+) {
     val colors = AppTheme.colors
     val shape = RoundedCornerShape(AppTheme.radius.pill)
     val fill = when {
@@ -185,10 +194,15 @@ fun CheckoutChip(label: String, selected: Boolean, modifier: Modifier = Modifier
         selected -> colors.background
         else -> colors.textPrimary
     }
+    val labelStyle = if (sheet) {
+        AppTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium)
+    } else {
+        AppTheme.typography.labelMedium
+    }
     val labelText = @Composable {
         Text(
             text = label,
-            style = AppTheme.typography.labelMedium,
+            style = labelStyle,
             color = labelColor,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -208,6 +222,36 @@ fun CheckoutChip(label: String, selected: Boolean, modifier: Modifier = Modifier
                     .background(fill)
                     .border(AppTheme.border.thin, if (selected) colors.primary else colors.textPrimary, shape)
                     .padding(horizontal = AppTheme.spacing.lg),
+                contentAlignment = Alignment.Center,
+            ) { labelText() }
+        }
+    } else if (sheet) {
+        val chipHeight = AppTheme.sizes.buttonSmall + AppTheme.spacing.xs
+        val horizontal = if (hug) {
+            AppTheme.sizes.buttonHorizontalPadding + AppTheme.spacing.sm
+        } else {
+            AppTheme.spacing.md
+        }
+        Box(
+            modifier = modifier
+                .heightIn(min = AppTheme.sizes.minTouchTarget)
+                .clickable(onClick = onClick),
+            contentAlignment = Alignment.Center,
+        ) {
+            Box(
+                Modifier
+                    .then(if (hug) Modifier else Modifier.fillMaxWidth())
+                    .height(chipHeight)
+                    .clip(shape)
+                    .background(fill)
+                    .then(
+                        if (selected) {
+                            Modifier
+                        } else {
+                            Modifier.border(AppTheme.border.thin, colors.textPrimary, shape)
+                        },
+                    )
+                    .padding(horizontal = horizontal),
                 contentAlignment = Alignment.Center,
             ) { labelText() }
         }
@@ -237,7 +281,7 @@ fun PillButton(
     val colors = AppTheme.colors
     val shape = RoundedCornerShape(AppTheme.radius.pill)
     val background = when {
-        !enabled && filled -> colors.primary.copy(alpha = 0.4f)
+        !enabled && filled -> colors.primary.copy(alpha = 0.35f)
         destructive -> colors.statusDanger
         filled -> colors.primary
         else -> colors.card
@@ -266,6 +310,7 @@ fun PillButton(
             text = label,
             style = AppTheme.typography.labelLarge,
             color = when {
+                !enabled && filled -> colors.card
                 !enabled -> colors.textMuted
                 destructive -> colors.background
                 filled -> colors.card
