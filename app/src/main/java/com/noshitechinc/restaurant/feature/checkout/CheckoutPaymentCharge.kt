@@ -33,7 +33,7 @@ import com.noshitechinc.restaurant.core.designsystem.theme.AppTheme
 internal fun CardChargeSection(state: CheckoutUiState, actions: PaymentActions) {
     val showCardSplit = state.payAmountMode == PayAmountMode.Full ||
         state.payAmountMode == PayAmountMode.ByItems ||
-        (state.payAmountMode == PayAmountMode.Custom && state.splitCustomKind == SplitCustomKind.Evenly)
+        state.payAmountMode == PayAmountMode.Custom
     ChargePanel {
         ReaderStatusRow()
         HorizontalDivider(
@@ -67,9 +67,10 @@ internal fun CardChargeSection(state: CheckoutUiState, actions: PaymentActions) 
 
 @Composable
 internal fun CashChargeSection(state: CheckoutUiState, actions: PaymentActions) {
+    // Same Full/Custom + tender chrome for Split → Custom amount as for Split evenly
     val showCashSplit = state.payAmountMode == PayAmountMode.Full ||
         state.payAmountMode == PayAmountMode.ByItems ||
-        (state.payAmountMode == PayAmountMode.Custom && state.splitCustomKind == SplitCustomKind.Evenly)
+        state.payAmountMode == PayAmountMode.Custom
     val customCharge = state.cardChargeCustom
     val charge = state.chargeCents
     val noteSuggestions = usaCashNoteSuggestionsCents(charge)

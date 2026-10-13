@@ -169,6 +169,7 @@ fun EqualPillChip(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     selectedFillPrimary: Boolean = false,
+    mediumHeight: Boolean = false,
 ) {
     val shape = RoundedCornerShape(AppTheme.radius.pill)
     val fill = when {
@@ -183,7 +184,7 @@ fun EqualPillChip(
     }
     Box(
         modifier
-            .height(AppTheme.sizes.buttonSmall)
+            .height(if (mediumHeight) AppTheme.sizes.buttonMedium else AppTheme.sizes.buttonSmall)
             .clip(shape)
             .background(fill)
             .then(
@@ -216,7 +217,7 @@ fun SurfaceChoiceRow(
     trackColor: Color = AppTheme.colors.surface,
     content: @Composable RowScope.() -> Unit,
 ) {
-    val shape = RoundedCornerShape(AppTheme.radius.sm)
+    val shape = RoundedCornerShape(AppTheme.radius.md)
     Row(
         modifier
             .then(if (fillMaxWidth) Modifier.fillMaxWidth() else Modifier)

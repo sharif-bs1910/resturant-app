@@ -104,6 +104,7 @@ data class CheckoutUiState(
     val payAmountMode: PayAmountMode = PayAmountMode.Full,
     val splitCustomKind: SplitCustomKind = SplitCustomKind.Evenly,
     val splitGuestCount: Int = 4,
+    val splitAmountDigits: String = "",
     val customChargeDigits: String = "",
     val cashTenderedDigits: String = "",
     val selectedPayLineIds: Set<String> = emptySet(),
@@ -156,6 +157,7 @@ data class CheckoutUiState(
     val selectedTotalCents: Int =
         (selectedSubtotalCents + selectedTaxCents).coerceAtMost(remainingBeforeTipCents)
     val customChargeCents: Int = digitsToCents(customChargeDigits)
+    val splitAmountCents: Int = digitsToCents(splitAmountDigits)
 
     val splitShareCents: Int
         get() = if (splitGuestCount <= 0) {
@@ -164,7 +166,6 @@ data class CheckoutUiState(
             remainingBeforeTipCents / splitGuestCount
         }
 
-    /** Base used for tip % chips (amount being paid this round, before tip). */
     val tipBaseCents: Int
         get() = when (payAmountMode) {
             PayAmountMode.Full -> remainingBeforeTipCents
@@ -174,15 +175,14 @@ data class CheckoutUiState(
                     SplitCustomKind.Evenly -> splitShareCents
 
                     SplitCustomKind.CustomAmount ->
-                        if (customChargeDigits.isEmpty()) {
+                        if (splitAmountDigits.isEmpty()) {
                             0
                         } else {
-                            customChargeCents.coerceIn(0, remainingBeforeTipCents)
+                            splitAmountCents.coerceIn(0, remainingBeforeTipCents)
                         }
                 }
 
             PayAmountMode.ByItems ->
-                // Card/cash "custom amount" digits only apply while that mode is selected
                 if (cardChargeCustom && customChargeDigits.isNotEmpty()) {
                     customChargeCents.coerceIn(0, selectedTotalCents)
                 } else {
@@ -212,7 +212,7 @@ data class CheckoutUiState(
                     SplitCustomKind.Evenly -> tipBaseCents + tipCents
 
                     SplitCustomKind.CustomAmount ->
-                        if (customChargeDigits.isEmpty()) 0 else tipBaseCents + tipCents
+                        if (splitAmountDigits.isEmpty()) 0 else tipBaseCents + tipCents
                 }
 
             payAmountMode == PayAmountMode.ByItems ->
@@ -228,9 +228,7 @@ data class CheckoutUiState(
         get() = when {
             settlement.isDeliveryApp -> remainingBeforeTipCents
 
-            (settlement == Settlement.Card || settlement == Settlement.Cash) &&
-                cardChargeCustom &&
-                !(payAmountMode == PayAmountMode.Custom && splitCustomKind == SplitCustomKind.CustomAmount) ->
+            (settlement == Settlement.Card || settlement == Settlement.Cash) && cardChargeCustom ->
                 if (customChargeDigits.isEmpty()) {
                     0
                 } else {

@@ -207,7 +207,7 @@ class CheckoutViewModelTest {
         vm.onPay()
         vm.onPayAmountMode(PayAmountMode.Custom)
         vm.onSplitCustomKind(SplitCustomKind.CustomAmount)
-        vm.onCustomAmountDigits("1000")
+        vm.onSplitAmountDigits("1000")
         assertEquals(1_000, vm.uiState.value.chargeCents)
         vm.onCollectPayment()
         mainDispatcherRule.dispatcher.scheduler.advanceTimeBy(2_000)

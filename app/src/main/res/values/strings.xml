@@ -265,7 +265,7 @@
     <string name="checkout_new_order_title">New order</string>
     <string name="checkout_confirmed_title">Order confirmed</string>
     <string name="checkout_payment_title">Collect payment</string>
-    <string name="checkout_payment_details">Collect payment</string>
+    <string name="checkout_payment_details">Payment details</string>
     <string name="checkout_bill_context">Bill #%1$s · %2$s · Table #%3$s. The order is sent to the kitchen once the bill is fully paid.</string>
     <string name="checkout_order_summary">Order summary</string>
     <string name="checkout_amount_remaining">Amount remaining</string>

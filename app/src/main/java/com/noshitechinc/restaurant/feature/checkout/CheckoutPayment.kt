@@ -51,6 +51,7 @@ data class PaymentActions(
     val onCashTenderExact: () -> Unit = {},
     val onCashTenderNote: (Int) -> Unit = {},
     val onCustomAmountDigits: (String) -> Unit = {},
+    val onSplitAmountDigits: (String) -> Unit = {},
     val onSendPaymentLink: () -> Unit = {},
     val onTogglePayLine: (String) -> Unit = {},
     val onSelectAllPayLines: () -> Unit = {},
@@ -77,7 +78,13 @@ fun PaymentContent(state: CheckoutUiState, actions: PaymentActions) {
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.xs)) {
             Text(
-                stringResource(R.string.checkout_payment_details),
+                stringResource(
+                    if (state.payAmountMode == PayAmountMode.Full) {
+                        R.string.checkout_payment_details
+                    } else {
+                        R.string.checkout_payment_title
+                    },
+                ),
                 style = AppTheme.typography.headlineSmall,
                 color = AppTheme.colors.textPrimary,
             )
@@ -244,9 +251,16 @@ private fun PaymentPane(state: CheckoutUiState, actions: PaymentActions, modifie
         }
         Text(
             stringResource(R.string.checkout_choose_payment_type),
-            style = AppTheme.typography.labelSmall,
-            // Figma: delivery → Text/Default; cash/card/split-by-items → Text/Muted
-            color = if (state.settlement.isDeliveryApp) {
+            // Figma JetBrains Mono 14 — keep mono family (labelSmall), size from labelMedium
+            style = AppTheme.typography.labelSmall.copy(
+                fontSize = AppTheme.typography.labelMedium.fontSize,
+                lineHeight = AppTheme.typography.labelMedium.lineHeight,
+            ),
+            // Figma: Full (15975) + delivery (16082) → Text/Default; split modes (14471/14640) → Muted
+            color = if (
+                state.settlement.isDeliveryApp ||
+                state.payAmountMode == PayAmountMode.Full
+            ) {
                 AppTheme.colors.textPrimary
             } else {
                 AppTheme.colors.textMuted
@@ -289,13 +303,16 @@ private fun AmountToPayHeader(state: CheckoutUiState) {
     ) {
         Text(
             stringResource(R.string.checkout_amount_to_pay),
-            style = AppTheme.typography.bodyLarge,
+            style = AppTheme.typography.titleSmall.copy(fontWeight = FontWeight.Normal),
             color = AppTheme.colors.textMuted,
             textAlign = TextAlign.Center,
         )
         Text(
             formatMoney(state.amountToPayCents),
-            style = AppTheme.typography.numericDisplay,
+            style = AppTheme.typography.numericDisplay.copy(
+                fontSize = AppTheme.typography.headlineMedium.fontSize,
+                lineHeight = AppTheme.typography.headlineMedium.lineHeight,
+            ),
             color = AppTheme.colors.textPrimary,
             textAlign = TextAlign.Center,
             maxLines = 1,
@@ -326,16 +343,25 @@ private fun SplitCustomSection(state: CheckoutUiState, actions: PaymentActions) 
             Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.Center,
         ) {
-            SurfaceChoiceRow(scroll = false, fillMaxWidth = false) {
+            SurfaceChoiceRow(
+                scroll = false,
+                fillMaxWidth = false,
+                trackColor = AppTheme.colors.background,
+                modifier = Modifier.width(AppTheme.sizes.checkoutDetailWidth),
+            ) {
                 SurfaceChoiceChip(
                     label = stringResource(R.string.checkout_split_evenly),
                     selected = state.splitCustomKind == SplitCustomKind.Evenly,
                     onClick = { actions.onSplitCustomKind(SplitCustomKind.Evenly) },
+                    modifier = Modifier.weight(1f),
+                    tall = true,
                 )
                 SurfaceChoiceChip(
                     label = stringResource(R.string.checkout_custom_amount),
                     selected = state.splitCustomKind == SplitCustomKind.CustomAmount,
                     onClick = { actions.onSplitCustomKind(SplitCustomKind.CustomAmount) },
+                    modifier = Modifier.weight(1f),
+                    tall = true,
                 )
             }
         }
@@ -345,8 +371,8 @@ private fun SplitCustomSection(state: CheckoutUiState, actions: PaymentActions) 
             SplitCustomKind.CustomAmount ->
                 CustomAmountField(
                     label = stringResource(R.string.checkout_enter_custom_tip),
-                    digits = state.customChargeDigits,
-                    onDigitsChange = actions.onCustomAmountDigits,
+                    digits = state.splitAmountDigits,
+                    onDigitsChange = actions.onSplitAmountDigits,
                 )
         }
     }
@@ -404,6 +430,7 @@ private fun SplitGuestsPanel(state: CheckoutUiState, actions: PaymentActions) {
                     selected = state.splitGuestCount == count,
                     onClick = { actions.onSplitGuestCount(count) },
                     modifier = Modifier.weight(1f),
+                    mediumHeight = true,
                 )
             }
         }
@@ -418,7 +445,8 @@ private fun TipSection(state: CheckoutUiState, actions: PaymentActions) {
     ) {
         Text(
             stringResource(R.string.checkout_add_a_tip),
-            style = AppTheme.typography.labelLarge,
+            // Figma 4050:16231: Inter 14 Medium
+            style = AppTheme.typography.labelMedium,
             color = AppTheme.colors.textPrimary,
         )
         Row(
@@ -618,6 +646,55 @@ private fun PaymentSplitByItemsPreview() {
                 payAmountMode = PayAmountMode.ByItems,
                 selectedPayLineIds = SampleCart.take(2).map { it.id }.toSet(),
                 settlement = Settlement.Card,
+            ),
+            emptyPayment(),
+        )
+    }
+}
+
+@ScreenPreviews
+@Composable
+private fun PaymentSplitCustomPreview() {
+    PreviewSurface {
+        PaymentContent(
+            CheckoutUiState(
+                step = CheckoutStep.Payment,
+                lines = SampleCart,
+                payAmountMode = PayAmountMode.Custom,
+                splitCustomKind = SplitCustomKind.Evenly,
+                splitGuestCount = 4,
+                settlement = Settlement.Card,
+            ),
+            emptyPayment(),
+        )
+    }
+}
+
+@ScreenPreviews
+@Composable
+private fun PaymentCashPreview() {
+    PreviewSurface {
+        PaymentContent(
+            CheckoutUiState(
+                step = CheckoutStep.Payment,
+                lines = SampleCart,
+                settlement = Settlement.Cash,
+            ),
+            emptyPayment(),
+        )
+    }
+}
+
+@ScreenPreviews
+@Composable
+private fun PaymentDeliveryPreview() {
+    PreviewSurface {
+        PaymentContent(
+            CheckoutUiState(
+                step = CheckoutStep.Payment,
+                lines = SampleCart,
+                settlement = Settlement.UberEats,
+                deliveryApp = DeliveryApp.UberEats,
             ),
             emptyPayment(),
         )

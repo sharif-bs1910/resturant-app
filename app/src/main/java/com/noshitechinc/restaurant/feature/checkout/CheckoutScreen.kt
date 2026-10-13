@@ -79,6 +79,7 @@ fun CheckoutRoute(viewModel: CheckoutViewModel = hiltViewModel()) {
             onAmountDigit = viewModel::onAmountDigit,
             onAmountDelete = viewModel::onAmountDelete,
             onCustomAmountDigits = viewModel::onCustomAmountDigits,
+            onSplitAmountDigits = viewModel::onSplitAmountDigits,
             onCashDigit = viewModel::onCashDigit,
             onCashDelete = viewModel::onCashDelete,
             onCashAmountDigits = viewModel::onCashAmountDigits,
@@ -234,9 +235,18 @@ fun CheckoutScreen(
 
         KitchenSection.Checkout -> when (state.step) {
             CheckoutStep.Idle -> R.string.checkout_title
+
             CheckoutStep.Queue -> R.string.checkout_title
+
             CheckoutStep.Building -> R.string.checkout_new_order_title
-            CheckoutStep.Payment -> R.string.checkout_payment_title
+
+            CheckoutStep.Payment ->
+                if (state.payAmountMode == PayAmountMode.Full) {
+                    R.string.checkout_payment_details
+                } else {
+                    R.string.checkout_payment_title
+                }
+
             CheckoutStep.Confirmed -> R.string.checkout_confirmed_title
         }
     }
