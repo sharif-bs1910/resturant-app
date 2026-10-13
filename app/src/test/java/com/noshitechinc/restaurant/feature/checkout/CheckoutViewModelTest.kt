@@ -490,6 +490,13 @@ class CheckoutViewModelTest {
     }
 
     @Test
+    fun `time log section opens`() = runTest {
+        val vm = CheckoutViewModel(DeviceRoleStore())
+        vm.onSection(KitchenSection.TimeLog)
+        assertEquals(KitchenSection.TimeLog, vm.uiState.value.section)
+    }
+
+    @Test
     fun `pos role is loaded and reporting section can open`() = runTest {
         val store = DeviceRoleStore().also { it.setRole(DeviceRole.Pos) }
         val vm = CheckoutViewModel(store)

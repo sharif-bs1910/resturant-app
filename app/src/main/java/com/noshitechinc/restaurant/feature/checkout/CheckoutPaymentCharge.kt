@@ -233,7 +233,7 @@ internal fun SplitByItemsSection(state: CheckoutUiState, actions: PaymentActions
             Text(
                 stringResource(R.string.checkout_selected_count, state.selectedPayLineIds.size, state.lines.size),
                 style = AppTheme.typography.bodySmall,
-                color = AppTheme.colors.textMuted,
+                color = AppTheme.colors.textPrimary,
             )
         }
         state.lines.forEachIndexed { index, line ->
@@ -346,8 +346,11 @@ private fun FullOrCustomRow(state: CheckoutUiState, actions: PaymentActions) {
         EqualPillChip(
             label = stringResource(
                 R.string.checkout_full_amount_value,
-                // Must match chargeCents when Full is selected — never fall back to dueCents
-                formatMoneyPlain(state.amountToPayCents),
+                if (state.payAmountMode == PayAmountMode.ByItems) {
+                    formatMoney(state.amountToPayCents)
+                } else {
+                    formatMoneyPlain(state.amountToPayCents)
+                },
             ),
             selected = !state.cardChargeCustom,
             onClick = { actions.onCardChargeCustom(false) },

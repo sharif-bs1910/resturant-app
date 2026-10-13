@@ -229,6 +229,8 @@ fun CheckoutScreen(
 
         KitchenSection.Team -> R.string.checkout_nav_team
 
+        KitchenSection.TimeLog -> R.string.checkout_nav_time_log
+
         KitchenSection.Settings -> R.string.checkout_nav_settings
 
         KitchenSection.Status -> R.string.checkout_kitchen_title
@@ -262,15 +264,18 @@ fun CheckoutScreen(
                 )
             }
             Column(Modifier.weight(1f)) {
-                CheckoutTopBar(
-                    title = stringResource(title),
-                    onOpenOrders = onOpenOrders,
-                    onNewOrder = onNewOrder,
-                    ordersSelected = state.step != CheckoutStep.Building && state.step != CheckoutStep.Payment,
-                    showActions = state.section == KitchenSection.Checkout &&
-                        state.step != CheckoutStep.Payment &&
-                        state.step != CheckoutStep.Confirmed,
-                )
+                val paymentChrome =
+                    state.section == KitchenSection.Checkout && state.step == CheckoutStep.Payment
+                if (!paymentChrome) {
+                    CheckoutTopBar(
+                        title = stringResource(title),
+                        onOpenOrders = onOpenOrders,
+                        onNewOrder = onNewOrder,
+                        ordersSelected = state.step != CheckoutStep.Building && state.step != CheckoutStep.Payment,
+                        showActions = state.section == KitchenSection.Checkout &&
+                            state.step != CheckoutStep.Confirmed,
+                    )
+                }
                 if (!adaptive.usesTwoPane) {
                     FlowRow(
                         Modifier.padding(horizontal = AppTheme.spacing.xl, vertical = AppTheme.spacing.sm),
@@ -294,6 +299,9 @@ fun CheckoutScreen(
                                 onSection(KitchenSection.Team)
                             }
                         }
+                        CheckoutChip(stringResource(R.string.checkout_nav_time_log), state.section == KitchenSection.TimeLog) {
+                            onSection(KitchenSection.TimeLog)
+                        }
                         CheckoutChip(stringResource(R.string.checkout_nav_settings), state.section == KitchenSection.Settings) {
                             onSection(KitchenSection.Settings)
                         }
@@ -310,6 +318,8 @@ fun CheckoutScreen(
                     KitchenSection.Reporting -> ReportingContent(state, onReporting, onExportReport)
 
                     KitchenSection.Team -> TeamContent(state, onTeam)
+
+                    KitchenSection.TimeLog -> TimeLogContent(state, onSettings)
 
                     KitchenSection.Settings -> SettingsContent(state, onSettings)
 
@@ -336,7 +346,9 @@ fun CheckoutScreen(
         }
         CheckoutOverlayHost(state, overlay)
         if (state.section == KitchenSection.Orders) BoardDialogHost(state, board)
-        if (state.section == KitchenSection.Settings) SettingsDialogHost(state, onSettings)
+        if (state.section == KitchenSection.Settings || state.section == KitchenSection.TimeLog) {
+            SettingsDialogHost(state, onSettings)
+        }
         if (state.section == KitchenSection.Team) TeamDialogHost(state, onTeam)
         state.promptedMenuItem?.let { item ->
             UnavailableDialog(item.name, state.unavailableUntil, menu)

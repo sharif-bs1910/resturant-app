@@ -78,6 +78,9 @@ fun KitchenRail(
                     onSection(KitchenSection.Team)
                 }
             }
+            RailItem(stringResource(R.string.checkout_nav_time_log), section == KitchenSection.TimeLog) {
+                onSection(KitchenSection.TimeLog)
+            }
             RailItem(stringResource(R.string.checkout_nav_settings), section == KitchenSection.Settings) {
                 onSection(KitchenSection.Settings)
             }
@@ -88,7 +91,7 @@ fun KitchenRail(
                 .fillMaxWidth()
                 .height(AppTheme.sizes.logoMark)
                 .clip(RoundedCornerShape(AppTheme.radius.sm))
-                .border(AppTheme.border.thin, colors.surface, RoundedCornerShape(AppTheme.radius.sm))
+                .background(colors.surface)
                 .clickable { onSection(KitchenSection.Status) }
                 .padding(horizontal = AppTheme.spacing.md),
             verticalAlignment = Alignment.CenterVertically,

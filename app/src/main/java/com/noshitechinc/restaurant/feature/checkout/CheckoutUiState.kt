@@ -16,6 +16,7 @@ enum class KitchenSection {
     Menu,
     Reporting,
     Team,
+    TimeLog,
     Settings,
     Status,
 }

@@ -672,6 +672,47 @@ private fun PaymentSplitCustomPreview() {
 
 @ScreenPreviews
 @Composable
+private fun PaymentSplitCustomAmountCashPreview() {
+    PreviewSurface {
+        PaymentContent(
+            CheckoutUiState(
+                step = CheckoutStep.Payment,
+                lines = SampleCart,
+                payAmountMode = PayAmountMode.Custom,
+                splitCustomKind = SplitCustomKind.CustomAmount,
+                splitAmountDigits = "2428",
+                settlement = Settlement.Cash,
+                cardChargeCustom = true,
+                customChargeDigits = "2000",
+                cashTenderedDigits = "5000",
+            ),
+            emptyPayment(),
+        )
+    }
+}
+
+@ScreenPreviews
+@Composable
+private fun PaymentSplitCustomAmountCardPreview() {
+    PreviewSurface {
+        PaymentContent(
+            CheckoutUiState(
+                step = CheckoutStep.Payment,
+                lines = SampleCart,
+                payAmountMode = PayAmountMode.Custom,
+                splitCustomKind = SplitCustomKind.CustomAmount,
+                splitAmountDigits = "2428",
+                settlement = Settlement.Card,
+                cardChargeCustom = true,
+                customChargeDigits = "2500",
+            ),
+            emptyPayment(),
+        )
+    }
+}
+
+@ScreenPreviews
+@Composable
 private fun PaymentCashPreview() {
     PreviewSurface {
         PaymentContent(

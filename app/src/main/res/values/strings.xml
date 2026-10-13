@@ -31,7 +31,7 @@
     <string name="role_subtitle">Pick one mode for this device. Its screen, sign-in and payment options change to match.</string>
     <string name="role_staff_title">Staff mode</string>
     <string name="role_staff_body">View tickets, track prep times, and bump orders when ready.</string>
-    <string name="role_pos_title">Counter staff</string>
+    <string name="role_pos_title">POS - Counter staff</string>
     <string name="role_pos_body">Manage orders, split bills, and payments.</string>
     <string name="role_self_title">Self service mode</string>
     <string name="role_self_body">Browse, customize, and pay at the kiosk. Orders go to the kitchen.</string>
@@ -119,6 +119,7 @@
     <string name="checkout_nav_menu">Menu</string>
     <string name="checkout_nav_reporting">Reporting</string>
     <string name="checkout_nav_team">Team</string>
+    <string name="checkout_nav_time_log">Time log</string>
     <string name="checkout_nav_settings">Settings</string>
     <string name="reporting_range">APR 1 — APR 30 · COMPARE TO MAR 1 — MAR 31</string>
     <string name="reporting_headline_prefix">How the business is</string>
