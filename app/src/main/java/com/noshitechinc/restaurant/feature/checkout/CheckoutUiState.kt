@@ -91,7 +91,7 @@ data class CheckoutUiState(
     val search: String = "",
     val builderQuery: String = "",
     val giftNumber: String = "8043 2210 4821",
-    val giftPin: String = "4821",
+    val giftPin: String = "",
     val giftField: GiftField = GiftField.Number,
     val giftAppliedCents: Int = 0,
     val giftApplyDigits: String = "",
@@ -102,6 +102,8 @@ data class CheckoutUiState(
     val cardChargeCustom: Boolean = false,
     val settlement: Settlement = Settlement.Card,
     val payAmountMode: PayAmountMode = PayAmountMode.Full,
+    val splitCustomKind: SplitCustomKind = SplitCustomKind.Evenly,
+    val splitGuestCount: Int = 4,
     val customChargeDigits: String = "",
     val cashTenderedDigits: String = "",
     val selectedPayLineIds: Set<String> = emptySet(),
@@ -155,59 +157,84 @@ data class CheckoutUiState(
         (selectedSubtotalCents + selectedTaxCents).coerceAtMost(remainingBeforeTipCents)
     val customChargeCents: Int = digitsToCents(customChargeDigits)
 
+    val splitShareCents: Int
+        get() = if (splitGuestCount <= 0) {
+            remainingBeforeTipCents
+        } else {
+            remainingBeforeTipCents / splitGuestCount
+        }
+
     /** Base used for tip % chips (amount being paid this round, before tip). */
     val tipBaseCents: Int
         get() = when (payAmountMode) {
             PayAmountMode.Full -> remainingBeforeTipCents
 
             PayAmountMode.Custom ->
-                if (customChargeDigits.isEmpty()) {
-                    remainingBeforeTipCents
-                } else {
-                    customChargeCents.coerceIn(0, remainingBeforeTipCents)
+                when (splitCustomKind) {
+                    SplitCustomKind.Evenly -> splitShareCents
+
+                    SplitCustomKind.CustomAmount ->
+                        if (customChargeDigits.isEmpty()) {
+                            0
+                        } else {
+                            customChargeCents.coerceIn(0, remainingBeforeTipCents)
+                        }
                 }
 
             PayAmountMode.ByItems ->
-                if (customChargeDigits.isEmpty()) {
-                    selectedTotalCents
-                } else {
+                // Card/cash "custom amount" digits only apply while that mode is selected
+                if (cardChargeCustom && customChargeDigits.isNotEmpty()) {
                     customChargeCents.coerceIn(0, selectedTotalCents)
+                } else {
+                    selectedTotalCents
                 }
         }
     val tipCents: Int
-        get() = when (tipOption) {
-            TipOption.None -> 0
-            TipOption.Percent5 -> tipBaseCents * 5 / 100
-            TipOption.Percent10 -> tipBaseCents * 10 / 100
-            TipOption.Percent20 -> tipBaseCents * 20 / 100
-            TipOption.Custom -> tipCustomCents.coerceAtLeast(0)
+        get() {
+            if (settlement.isDeliveryApp) return 0
+            return when (tipOption) {
+                TipOption.None -> 0
+                TipOption.Percent5 -> tipBaseCents * 5 / 100
+                TipOption.Percent10 -> tipBaseCents * 10 / 100
+                TipOption.Percent20 -> tipBaseCents * 20 / 100
+                TipOption.Custom -> tipCustomCents.coerceAtLeast(0)
+            }
         }
     val dueCents: Int = (remainingBeforeTipCents + tipCents).coerceAtLeast(0)
     val amountToPayCents: Int
-        get() = when (payAmountMode) {
-            PayAmountMode.Full -> dueCents
+        get() = when {
+            settlement.isDeliveryApp -> 0
 
-            PayAmountMode.Custom ->
-                if (customChargeDigits.isEmpty()) 0 else tipBaseCents + tipCents
+            payAmountMode == PayAmountMode.Full -> dueCents
 
-            PayAmountMode.ByItems ->
+            payAmountMode == PayAmountMode.Custom ->
+                when (splitCustomKind) {
+                    SplitCustomKind.Evenly -> tipBaseCents + tipCents
+
+                    SplitCustomKind.CustomAmount ->
+                        if (customChargeDigits.isEmpty()) 0 else tipBaseCents + tipCents
+                }
+
+            payAmountMode == PayAmountMode.ByItems ->
                 if (selectedPayLineIds.isEmpty() && customChargeDigits.isEmpty()) {
                     0
                 } else {
                     tipBaseCents + tipCents
                 }
+
+            else -> 0
         }
     val chargeCents: Int
         get() = when {
-            settlement.isDeliveryApp -> amountToPayCents
+            settlement.isDeliveryApp -> remainingBeforeTipCents
 
-            payAmountMode == PayAmountMode.Full &&
-                (settlement == Settlement.Card || settlement == Settlement.Cash) &&
-                cardChargeCustom ->
+            (settlement == Settlement.Card || settlement == Settlement.Cash) &&
+                cardChargeCustom &&
+                !(payAmountMode == PayAmountMode.Custom && splitCustomKind == SplitCustomKind.CustomAmount) ->
                 if (customChargeDigits.isEmpty()) {
                     0
                 } else {
-                    customChargeCents.coerceIn(0, dueCents)
+                    customChargeCents.coerceIn(0, amountToPayCents.coerceAtLeast(dueCents))
                 }
 
             else -> amountToPayCents

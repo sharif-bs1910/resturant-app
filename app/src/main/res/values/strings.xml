@@ -264,8 +264,8 @@
     <string name="checkout_title">Checkout</string>
     <string name="checkout_new_order_title">New order</string>
     <string name="checkout_confirmed_title">Order confirmed</string>
-    <string name="checkout_payment_title">Payment details</string>
-    <string name="checkout_payment_details">Payment details</string>
+    <string name="checkout_payment_title">Collect payment</string>
+    <string name="checkout_payment_details">Collect payment</string>
     <string name="checkout_bill_context">Bill #%1$s · %2$s · Table #%3$s. The order is sent to the kitchen once the bill is fully paid.</string>
     <string name="checkout_order_summary">Order summary</string>
     <string name="checkout_amount_remaining">Amount remaining</string>
@@ -285,6 +285,9 @@
     <string name="checkout_pay_full_amount">Pay full amount</string>
     <string name="checkout_split_custom">Split custom amount</string>
     <string name="checkout_split_by_items">Split by items</string>
+    <string name="checkout_split_evenly">Split evenly</string>
+    <string name="checkout_number_of_guests">Number of guests</string>
+    <string name="checkout_guests_split_hint">Up to 50 guests · %1$s split evenly</string>
     <string name="checkout_choose_payment_type">CHOOSE A PAYMENT TYPE</string>
     <string name="checkout_cash">Cash</string>
     <string name="checkout_card">Card</string>
@@ -298,6 +301,7 @@
     <string name="checkout_platform_order_hint">Enter order id</string>
     <string name="checkout_select_delivery_app">Select delivery app first</string>
     <string name="checkout_mark_paid_amount">Mark paid · %1$s</string>
+    <string name="checkout_place_delivery_order">Place %1$s order %2$s</string>
     <string name="checkout_paid_on_delivery_app">Paid on the delivery app · %1$s</string>
     <string name="checkout_paid_other">Paid on delivery app</string>
     <string name="checkout_full_amount">Full amount</string>
@@ -309,8 +313,9 @@
     <string name="checkout_how_much_cash">How much cash was received?</string>
     <string name="checkout_exact_amount">Exact %1$s</string>
     <string name="checkout_enter_cash_amount">Enter cash amount</string>
-    <string name="checkout_change_due">Change due</string>
-    <string name="checkout_change_due_value">Change due: %1$s</string>
+    <string name="checkout_cash_received">Cash received</string>
+    <string name="checkout_change_due">Change Due</string>
+    <string name="checkout_change_due_value">Change Due: %1$s</string>
     <string name="checkout_charge_amount">Charge %1$s</string>
     <string name="checkout_collect_cash">Collect %1$s</string>
     <string name="checkout_select_all">Select all</string>
@@ -319,7 +324,7 @@
     <string name="checkout_reader_name">Russo Kitchen · Counter 1</string>
     <string name="checkout_reader_connected">Connected</string>
     <string name="checkout_processing_title">Processing payment…</string>
-    <string name="checkout_processing_body">Please don\'t remove your card!</string>
+    <string name="checkout_processing_body">Please don\'t remove your card</string>
     <string name="checkout_customer_title">Add customer info</string>
     <string name="checkout_customer_update_title">Update customer info</string>
     <string name="checkout_customer_subtitle">Used for order updates and pickup calls.</string>
@@ -335,7 +340,9 @@
     <string name="checkout_placed_heading">Order Placed Successfully</string>
     <string name="checkout_placed_body">Your order has been confirmed and sent to the kitchen.</string>
     <string name="checkout_token_number">TOKEN NUMBER</string>
-    <string name="checkout_table_number">Table number</string>
+    <string name="checkout_table_number">TABLE NUMBER</string>
+    <string name="checkout_enter_pin">Enter pin</string>
+    <string name="checkout_gift_none">—</string>
     <string name="checkout_token_value">#%1$s</string>
     <string name="checkout_recap_name">Name</string>
     <string name="checkout_recap_phone">Phone number</string>

@@ -40,6 +40,11 @@ enum class PayAmountMode {
     ByItems,
 }
 
+enum class SplitCustomKind {
+    Evenly,
+    CustomAmount,
+}
+
 enum class TipOption {
     None,
     Percent5,
@@ -500,9 +505,21 @@ fun formatMoney(cents: Int): String {
     return "$sign$$dollars.$remainder"
 }
 
+/** Amount without currency symbol — Figma cash Full amount (97.12). */
+fun formatMoneyPlain(cents: Int): String = formatMoney(cents).removePrefix("$").removePrefix("−$").let { plain ->
+    if (cents < 0) "−$plain" else plain
+}
+
 fun nextCashRoundUpCents(chargeCents: Int): Int {
     if (chargeCents <= 0) return 0
     val step = 1_000
     val rounded = ((chargeCents + step - 1) / step) * step
     return if (rounded == chargeCents) chargeCents + step else rounded
+}
+
+/** Common US note denominations (cents) greater than the charge — e.g. $12.22 → $20, $50, $100. */
+fun usaCashNoteSuggestionsCents(chargeCents: Int, limit: Int = 3): List<Int> {
+    if (chargeCents <= 0) return emptyList()
+    val notes = listOf(1_000, 2_000, 5_000, 10_000)
+    return notes.filter { it > chargeCents }.take(limit)
 }

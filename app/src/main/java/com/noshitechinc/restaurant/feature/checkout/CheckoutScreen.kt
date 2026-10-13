@@ -83,7 +83,7 @@ fun CheckoutRoute(viewModel: CheckoutViewModel = hiltViewModel()) {
             onCashDelete = viewModel::onCashDelete,
             onCashAmountDigits = viewModel::onCashAmountDigits,
             onCashTenderExact = viewModel::onCashTenderExact,
-            onCashTenderRoundUp = viewModel::onCashTenderRoundUp,
+            onCashTenderNote = viewModel::onCashTenderNote,
             onRedeemGiftCard = viewModel::onRedeemGiftCard,
             onCollectPayment = viewModel::onCollectPayment,
             onBack = viewModel::onBackFromPayment,
@@ -98,6 +98,8 @@ fun CheckoutRoute(viewModel: CheckoutViewModel = hiltViewModel()) {
             onTipAmountDigits = viewModel::onTipAmountDigits,
             onDeliveryApp = viewModel::onDeliveryApp,
             onPlatformOrderId = viewModel::onPlatformOrderId,
+            onSplitCustomKind = viewModel::onSplitCustomKind,
+            onSplitGuestCount = viewModel::onSplitGuestCount,
         ),
         overlay = OverlayActions(
             onDismiss = viewModel::onBackToCart,
@@ -255,7 +257,9 @@ fun CheckoutScreen(
                     onOpenOrders = onOpenOrders,
                     onNewOrder = onNewOrder,
                     ordersSelected = state.step != CheckoutStep.Building && state.step != CheckoutStep.Payment,
-                    showActions = state.section == KitchenSection.Checkout,
+                    showActions = state.section == KitchenSection.Checkout &&
+                        state.step != CheckoutStep.Payment &&
+                        state.step != CheckoutStep.Confirmed,
                 )
                 if (!adaptive.usesTwoPane) {
                     FlowRow(

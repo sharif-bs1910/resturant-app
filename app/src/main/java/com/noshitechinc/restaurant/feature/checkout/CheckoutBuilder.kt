@@ -380,6 +380,7 @@ fun Stepper(quantity: Int, onChange: (Int) -> Unit) {
         modifier = Modifier
             .height(AppTheme.sizes.buttonSmall)
             .clip(shape)
+            .background(AppTheme.colors.card)
             .border(AppTheme.border.thin, divider, shape),
         verticalAlignment = Alignment.CenterVertically,
     ) {

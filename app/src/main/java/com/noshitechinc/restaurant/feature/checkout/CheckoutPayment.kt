@@ -6,8 +6,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -16,16 +16,19 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import com.noshitechinc.restaurant.R
@@ -46,7 +49,7 @@ data class PaymentActions(
     val onBack: () -> Unit,
     val onCashAmountDigits: (String) -> Unit = {},
     val onCashTenderExact: () -> Unit = {},
-    val onCashTenderRoundUp: () -> Unit = {},
+    val onCashTenderNote: (Int) -> Unit = {},
     val onCustomAmountDigits: (String) -> Unit = {},
     val onSendPaymentLink: () -> Unit = {},
     val onTogglePayLine: (String) -> Unit = {},
@@ -59,6 +62,8 @@ data class PaymentActions(
     val onTipAmountDigits: (String) -> Unit = {},
     val onDeliveryApp: (DeliveryApp) -> Unit = {},
     val onPlatformOrderId: (String) -> Unit = {},
+    val onSplitCustomKind: (SplitCustomKind) -> Unit = {},
+    val onSplitGuestCount: (Int) -> Unit = {},
 )
 
 @Composable
@@ -93,9 +98,17 @@ fun PaymentContent(state: CheckoutUiState, actions: PaymentActions) {
             Row(
                 Modifier.weight(1f).fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.lg),
+                verticalAlignment = Alignment.Top,
             ) {
-                OrderSummaryPane(state, actions, Modifier.width(AppTheme.sizes.dialogMaxWidth / 2).fillMaxHeight())
-                PaymentPane(state, actions, Modifier.weight(1f).fillMaxHeight())
+                OrderSummaryPane(state, actions, Modifier.width(AppTheme.sizes.dialogMaxWidth / 2))
+                // Wrap height to content (Figma delivery 4050:16102) — fillMaxHeight left empty space under CTA
+                PaymentPane(
+                    state,
+                    actions,
+                    Modifier
+                        .weight(1f)
+                        .wrapContentHeight(align = Alignment.Top),
+                )
             }
         } else {
             Column(
@@ -112,75 +125,90 @@ fun PaymentContent(state: CheckoutUiState, actions: PaymentActions) {
 @Composable
 private fun OrderSummaryPane(state: CheckoutUiState, actions: PaymentActions, modifier: Modifier) {
     val shape = RoundedCornerShape(AppTheme.radius.md)
+    val deliverySummary = state.settlement.isDeliveryApp
     Column(
         modifier
+            .wrapContentHeight()
+            .height(IntrinsicSize.Min)
             .clip(shape)
             .background(AppTheme.colors.card)
             .border(AppTheme.border.thin, AppTheme.colors.textPrimary.copy(alpha = 0.14f), shape)
             .padding(AppTheme.spacing.lg),
-        verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.md),
+        verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.lg),
     ) {
         Text(
             stringResource(R.string.checkout_order_summary),
             style = AppTheme.typography.titleMedium,
             color = AppTheme.colors.textPrimary,
         )
-        MoneyRow(stringResource(R.string.checkout_subtotal), formatMoney(state.subtotalCents))
-        MoneyRow(stringResource(R.string.checkout_tax), formatMoney(state.taxCents))
-        MoneyRow(stringResource(R.string.checkout_total), formatMoney(state.totalCents + state.tipCents), emphasize = true)
-        if (state.giftAppliedCents > 0) {
-            MoneyRow(stringResource(R.string.checkout_gift_card), formatMoney(-state.giftAppliedCents))
-        }
-        if (state.paidCents > 0) {
-            MoneyRow(stringResource(R.string.checkout_paid_so_far), formatMoney(-state.paidCents))
-        }
-        Box(Modifier.fillMaxWidth().height(AppTheme.border.thin).background(AppTheme.colors.textPrimary.copy(alpha = 0.14f)))
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(
-                stringResource(R.string.checkout_amount_remaining),
-                style = AppTheme.typography.titleSmall,
-                color = AppTheme.colors.textPrimary,
-            )
-            Text(
-                formatMoney(state.dueCents),
-                style = AppTheme.typography.titleSmall,
-                color = AppTheme.colors.primary,
-            )
-        }
-        PaidProgressBar(state.paidProgress)
-        Text(
-            if (state.coveredCents > 0) {
-                stringResource(
-                    R.string.checkout_paid_of,
-                    formatMoney(state.coveredCents),
-                    formatMoney(state.billCents),
-                )
-            } else {
-                stringResource(R.string.checkout_no_payments_yet)
-            },
-            style = AppTheme.typography.bodySmall,
-            color = AppTheme.colors.textMuted,
-        )
-        PillButton(
-            stringResource(R.string.checkout_redeem),
-            actions.onRedeemGiftCard,
+        Column(
             Modifier.fillMaxWidth(),
-            filled = false,
-        )
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = AppTheme.sizes.minTouchTarget)
-                .clip(RoundedCornerShape(AppTheme.radius.pill))
-                .background(AppTheme.colors.surface)
-                .clickable(onClick = actions.onSendPaymentLink),
-            contentAlignment = Alignment.Center,
+            verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.md),
         ) {
-            Text(
-                stringResource(R.string.checkout_payment_link),
-                style = AppTheme.typography.labelLarge,
-                color = AppTheme.colors.textPrimary,
+            MoneyRow(stringResource(R.string.checkout_subtotal), formatMoney(state.subtotalCents))
+            MoneyRow(stringResource(R.string.checkout_tax), formatMoney(state.taxCents))
+            if (!deliverySummary && state.tipCents > 0) {
+                MoneyRow(stringResource(R.string.checkout_tip), formatMoney(state.tipCents))
+            }
+            MoneyRow(
+                stringResource(R.string.checkout_total),
+                formatMoney(state.totalCents + if (deliverySummary) 0 else state.tipCents),
+                emphasize = true,
             )
+        }
+        // Figma Pay with Others (4050:16102): compact card — totals only, no remaining / redeem / link
+        if (!deliverySummary) {
+            if (state.giftAppliedCents > 0) {
+                MoneyRow(stringResource(R.string.checkout_gift_card), formatMoney(-state.giftAppliedCents))
+            }
+            if (state.paidCents > 0) {
+                MoneyRow(stringResource(R.string.checkout_paid_so_far), formatMoney(-state.paidCents))
+            }
+            HorizontalDivider(
+                thickness = AppTheme.border.thin,
+                color = AppTheme.colors.textPrimary.copy(alpha = 0.14f),
+            )
+            MoneyRow(
+                stringResource(R.string.checkout_amount_remaining),
+                formatMoney(state.dueCents),
+                emphasize = true,
+                accentValue = true,
+            )
+            PaidProgressBar(state.paidProgress)
+            Text(
+                if (state.coveredCents > 0) {
+                    stringResource(
+                        R.string.checkout_paid_of,
+                        formatMoney(state.coveredCents),
+                        formatMoney(state.billCents),
+                    )
+                } else {
+                    stringResource(R.string.checkout_no_payments_yet)
+                },
+                style = AppTheme.typography.bodySmall,
+                color = AppTheme.colors.textMuted,
+            )
+            PillButton(
+                stringResource(R.string.checkout_redeem),
+                actions.onRedeemGiftCard,
+                Modifier.fillMaxWidth(),
+                filled = false,
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = AppTheme.sizes.minTouchTarget)
+                    .clip(RoundedCornerShape(AppTheme.radius.pill))
+                    .background(AppTheme.colors.surface)
+                    .clickable(onClick = actions.onSendPaymentLink),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    stringResource(R.string.checkout_payment_link),
+                    style = AppTheme.typography.labelLarge,
+                    color = AppTheme.colors.textPrimary,
+                )
+            }
         }
     }
 }
@@ -190,6 +218,7 @@ private fun PaymentPane(state: CheckoutUiState, actions: PaymentActions, modifie
     val shape = RoundedCornerShape(AppTheme.radius.md)
     Column(
         modifier
+            .wrapContentHeight()
             .clip(shape)
             .background(AppTheme.colors.card)
             .border(AppTheme.border.thin, AppTheme.colors.textPrimary.copy(alpha = 0.14f), shape)
@@ -199,27 +228,41 @@ private fun PaymentPane(state: CheckoutUiState, actions: PaymentActions, modifie
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         PayAmountModeRow(state.payAmountMode, actions.onPayAmountMode)
-        AmountToPayHeader(state.amountToPayCents)
+        // Figma split-by-items (4050:14640): no Amount to pay header — item list totals replace it
+        if (state.payAmountMode != PayAmountMode.ByItems) {
+            AmountToPayHeader(state)
+        }
         when (state.payAmountMode) {
             PayAmountMode.Full -> Unit
-
-            PayAmountMode.Custom -> {
-                CustomAmountField(
-                    label = stringResource(R.string.checkout_enter_custom_tip),
-                    digits = state.customChargeDigits,
-                    onDigitsChange = actions.onCustomAmountDigits,
-                )
-            }
-
+            PayAmountMode.Custom -> SplitCustomSection(state, actions)
             PayAmountMode.ByItems -> SplitByItemsSection(state, actions)
         }
-        TipSection(state, actions)
+        PaymentPaneDivider()
+        if (!state.settlement.isDeliveryApp) {
+            TipSection(state, actions)
+            PaymentPaneDivider()
+        }
         Text(
             stringResource(R.string.checkout_choose_payment_type),
             style = AppTheme.typography.labelSmall,
-            color = AppTheme.colors.textPrimary,
+            // Figma: delivery → Text/Default; cash/card/split-by-items → Text/Muted
+            color = if (state.settlement.isDeliveryApp) {
+                AppTheme.colors.textPrimary
+            } else {
+                AppTheme.colors.textMuted
+            },
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth(),
         )
-        PaymentTypeRow(state.settlement, actions.onSettlement)
+        PaymentTypeRow(
+            settlement = state.settlement,
+            options = if (state.payAmountMode == PayAmountMode.ByItems) {
+                listOf(Settlement.Card, Settlement.Cash)
+            } else {
+                Settlement.entries.toList()
+            },
+            onSettlement = actions.onSettlement,
+        )
         when {
             state.settlement == Settlement.Card -> CardChargeSection(state, actions)
             state.settlement == Settlement.Cash -> CashChargeSection(state, actions)
@@ -229,21 +272,141 @@ private fun PaymentPane(state: CheckoutUiState, actions: PaymentActions, modifie
 }
 
 @Composable
-private fun AmountToPayHeader(amountCents: Int) {
+private fun PaymentPaneDivider() {
+    HorizontalDivider(
+        modifier = Modifier.fillMaxWidth(),
+        thickness = AppTheme.border.thin,
+        color = AppTheme.colors.textPrimary.copy(alpha = 0.14f),
+    )
+}
+
+@Composable
+private fun AmountToPayHeader(state: CheckoutUiState) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.sm),
+        modifier = Modifier.fillMaxWidth(),
     ) {
         Text(
             stringResource(R.string.checkout_amount_to_pay),
             style = AppTheme.typography.bodyLarge,
             color = AppTheme.colors.textMuted,
+            textAlign = TextAlign.Center,
         )
         Text(
-            formatMoney(amountCents),
+            formatMoney(state.amountToPayCents),
             style = AppTheme.typography.numericDisplay,
             color = AppTheme.colors.textPrimary,
+            textAlign = TextAlign.Center,
+            maxLines = 1,
+            softWrap = false,
         )
+        if (state.settlement.isDeliveryApp) {
+            Text(
+                stringResource(
+                    R.string.checkout_paid_on_delivery_app,
+                    formatMoney(state.remainingBeforeTipCents),
+                ),
+                style = AppTheme.typography.bodyMedium,
+                color = AppTheme.colors.textMuted,
+                textAlign = TextAlign.Center,
+            )
+        }
+    }
+}
+
+@Composable
+private fun SplitCustomSection(state: CheckoutUiState, actions: PaymentActions) {
+    Column(
+        Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.lg),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center,
+        ) {
+            SurfaceChoiceRow(scroll = false, fillMaxWidth = false) {
+                SurfaceChoiceChip(
+                    label = stringResource(R.string.checkout_split_evenly),
+                    selected = state.splitCustomKind == SplitCustomKind.Evenly,
+                    onClick = { actions.onSplitCustomKind(SplitCustomKind.Evenly) },
+                )
+                SurfaceChoiceChip(
+                    label = stringResource(R.string.checkout_custom_amount),
+                    selected = state.splitCustomKind == SplitCustomKind.CustomAmount,
+                    onClick = { actions.onSplitCustomKind(SplitCustomKind.CustomAmount) },
+                )
+            }
+        }
+        when (state.splitCustomKind) {
+            SplitCustomKind.Evenly -> SplitGuestsPanel(state, actions)
+
+            SplitCustomKind.CustomAmount ->
+                CustomAmountField(
+                    label = stringResource(R.string.checkout_enter_custom_tip),
+                    digits = state.customChargeDigits,
+                    onDigitsChange = actions.onCustomAmountDigits,
+                )
+        }
+    }
+}
+
+@Composable
+private fun SplitGuestsPanel(state: CheckoutUiState, actions: PaymentActions) {
+    val shape = RoundedCornerShape(AppTheme.radius.md)
+    val hairline = AppTheme.colors.textPrimary.copy(alpha = 0.14f)
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .clip(shape)
+            .background(AppTheme.colors.background)
+            .padding(AppTheme.spacing.xl),
+        verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.lg),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Row(
+            Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Column(
+                Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.xs),
+            ) {
+                Text(
+                    stringResource(R.string.checkout_number_of_guests),
+                    style = AppTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                    color = AppTheme.colors.textPrimary,
+                )
+                Text(
+                    stringResource(
+                        R.string.checkout_guests_split_hint,
+                        formatMoney(state.remainingBeforeTipCents),
+                    ),
+                    style = AppTheme.typography.bodyMedium,
+                    color = AppTheme.colors.textMuted,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            Stepper(state.splitGuestCount) { actions.onSplitGuestCount(it) }
+        }
+        HorizontalDivider(thickness = AppTheme.border.thin, color = hairline)
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.sm),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            for (count in 2..8) {
+                EqualPillChip(
+                    label = count.toString(),
+                    selected = state.splitGuestCount == count,
+                    onClick = { actions.onSplitGuestCount(count) },
+                    modifier = Modifier.weight(1f),
+                )
+            }
+        }
     }
 }
 
@@ -335,39 +498,59 @@ private fun TipChip(title: String, subtitle: String, selected: Boolean, modifier
 private fun PayAmountModeRow(selected: PayAmountMode, onSelect: (PayAmountMode) -> Unit) {
     Row(
         Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.sm),
+        horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.sm, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         EqualPillChip(
             stringResource(R.string.checkout_pay_full_amount),
             selected == PayAmountMode.Full,
             onClick = { onSelect(PayAmountMode.Full) },
-            modifier = Modifier.weight(1f),
         )
         EqualPillChip(
             stringResource(R.string.checkout_split_custom),
             selected == PayAmountMode.Custom,
             onClick = { onSelect(PayAmountMode.Custom) },
-            modifier = Modifier.weight(1f),
         )
         EqualPillChip(
             stringResource(R.string.checkout_split_by_items),
             selected == PayAmountMode.ByItems,
             onClick = { onSelect(PayAmountMode.ByItems) },
-            modifier = Modifier.weight(1f),
         )
     }
 }
 
 @Composable
-private fun PaymentTypeRow(selected: Settlement, onSelect: (Settlement) -> Unit) {
-    SurfaceChoiceRow {
-        Settlement.entries.forEach { option ->
-            SurfaceChoiceChip(
-                label = stringResource(option.labelRes),
-                selected = option == selected,
-                onClick = { onSelect(option) },
-            )
+private fun PaymentTypeRow(settlement: Settlement, options: List<Settlement>, onSettlement: (Settlement) -> Unit) {
+    // Figma split-by-items (4050:14748): fixed 400px oat-milk track, equal flex Card/Cash
+    val splitByItems = options.size == 2
+    Row(
+        Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.Center,
+    ) {
+        SurfaceChoiceRow(
+            scroll = !splitByItems,
+            // Fixed 400dp width for Card/Cash — do not fillMaxWidth or it overrides width()
+            fillMaxWidth = false,
+            trackColor = if (splitByItems) {
+                AppTheme.colors.background
+            } else {
+                AppTheme.colors.surface
+            },
+            modifier = if (splitByItems) {
+                Modifier.width(AppTheme.sizes.checkoutDetailWidth)
+            } else {
+                Modifier.widthIn(max = AppTheme.sizes.dialogMaxWidth)
+            },
+        ) {
+            options.forEach { option ->
+                SurfaceChoiceChip(
+                    label = stringResource(option.labelRes),
+                    selected = settlement == option,
+                    onClick = { onSettlement(option) },
+                    modifier = if (splitByItems) Modifier.weight(1f) else Modifier,
+                    tall = splitByItems,
+                )
+            }
         }
     }
 }
@@ -376,7 +559,7 @@ private fun PaymentTypeRow(selected: Settlement, onSelect: (Settlement) -> Unit)
 fun ProcessingOverlay() {
     Column(
         modifier = Modifier
-            .widthIn(max = AppTheme.sizes.dialogMaxWidth)
+            .widthIn(max = AppTheme.sizes.formMaxWidth / 2)
             .fillMaxWidth()
             .clip(RoundedCornerShape(AppTheme.radius.lg))
             .background(AppTheme.colors.card)
@@ -384,11 +567,20 @@ fun ProcessingOverlay() {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.lg),
     ) {
-        CircularProgressIndicator(
-            modifier = Modifier.size(AppTheme.sizes.logoMark),
-            color = AppTheme.colors.primary,
-            trackColor = AppTheme.colors.surface,
-        )
+        Box(
+            Modifier
+                .size(AppTheme.sizes.logoMark)
+                .clip(RoundedCornerShape(AppTheme.radius.pill))
+                .background(AppTheme.colors.primary),
+            contentAlignment = Alignment.Center,
+        ) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(AppTheme.sizes.iconMd),
+                color = AppTheme.colors.card,
+                trackColor = AppTheme.colors.primary.copy(alpha = 0.35f),
+                strokeWidth = AppTheme.border.thick,
+            )
+        }
         Text(
             stringResource(R.string.checkout_processing_title),
             style = AppTheme.typography.headlineSmall,
@@ -410,6 +602,23 @@ private fun PaymentCardPreview() {
     PreviewSurface {
         PaymentContent(
             CheckoutUiState(step = CheckoutStep.Payment, lines = SampleCart, settlement = Settlement.Card),
+            emptyPayment(),
+        )
+    }
+}
+
+@ScreenPreviews
+@Composable
+private fun PaymentSplitByItemsPreview() {
+    PreviewSurface {
+        PaymentContent(
+            CheckoutUiState(
+                step = CheckoutStep.Payment,
+                lines = SampleCart,
+                payAmountMode = PayAmountMode.ByItems,
+                selectedPayLineIds = SampleCart.take(2).map { it.id }.toSet(),
+                settlement = Settlement.Card,
+            ),
             emptyPayment(),
         )
     }

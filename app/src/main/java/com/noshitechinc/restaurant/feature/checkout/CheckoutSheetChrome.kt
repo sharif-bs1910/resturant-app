@@ -114,14 +114,15 @@ fun NoteField(value: String, onValue: (String) -> Unit) {
 }
 
 @Composable
-fun GiftField(label: String, value: String, selected: Boolean, onClick: () -> Unit) {
+fun GiftField(label: String, value: String, selected: Boolean, placeholder: String = "", onClick: () -> Unit) {
     val shape = RoundedCornerShape(AppTheme.radius.sm)
+    val display = value.ifEmpty { placeholder }
     Column(Modifier.fillMaxWidth().clickable(onClick = onClick), verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.xs)) {
         Text(label, style = AppTheme.typography.labelSmall, color = AppTheme.colors.textMuted)
         Text(
-            text = value,
+            text = display,
             style = AppTheme.typography.bodyMedium,
-            color = AppTheme.colors.textPrimary,
+            color = if (value.isEmpty()) AppTheme.colors.textMuted else AppTheme.colors.textPrimary,
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(shape)
