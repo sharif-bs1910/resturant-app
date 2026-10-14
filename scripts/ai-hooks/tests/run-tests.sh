@@ -126,4 +126,34 @@ run format-kotlin.sh cursor "{\"hook_event_name\":\"afterFileEdit\",\"conversati
 out="$(run doc-sync-reminder.sh cursor '{"hook_event_name":"stop","conversation_id":"s4","status":"completed","loop_count":0}')"
 assert_empty "doc sync skipped when docs edited" "$out"
 
+# --- Figma MCP cache ---
+figma_run() { local mode="$1" json="$2"; printf '%s' "$json" | "$HOOKS/figma-cache.sh" "$mode" cursor; }
+
+FIGMA_AFTER='{"hook_event_name":"afterMCPExecution","mcp_server_name":"plugin-figma-figma","tool_name":"get_design_context","tool_input":"{\"fileKey\":\"AbcFileKey123456789012\",\"nodeId\":\"2057:4006\",\"clientLanguages\":\"kotlin\"}","result_json":"{\"ok\":true,\"nodeId\":\"2057:4006\",\"code\":\"<div>Menu</div>\"}"}'
+out="$(figma_run after "$FIGMA_AFTER")"
+CACHE_HIT="$(find "$WORK/resturant-app/.ai/figma-cache" -name 'get_design_context__*.json' 2>/dev/null | head -1)"
+[[ -n "$CACHE_HIT" ]] && pass "figma cache written" || bad "figma cache written" "no cache file under .ai/figma-cache"
+assert_empty "afterMCPExecution silent" "$out"
+
+FIGMA_BEFORE='{"hook_event_name":"beforeMCPExecution","mcp_server_name":"plugin-figma-figma","tool_name":"get_design_context","tool_input":"{\"fileKey\":\"AbcFileKey123456789012\",\"nodeId\":\"2057:4006\",\"clientLanguages\":\"kotlin\"}"}'
+out="$(figma_run before "$FIGMA_BEFORE")"
+assert_contains "figma cache hit denies" "$out" '"permission": "deny"'
+assert_contains "figma cache hit path" "$out" 'figma-cache'
+
+FIGMA_REFRESH='{"hook_event_name":"beforeMCPExecution","mcp_server_name":"plugin-figma-figma","tool_name":"get_design_context","tool_input":"{\"fileKey\":\"AbcFileKey123456789012\",\"nodeId\":\"2057:4006\",\"forceRefresh\":true}"}'
+out="$(figma_run before "$FIGMA_REFRESH")"
+assert_contains "figma forceRefresh allows" "$out" '"permission": "allow"'
+
+FIGMA_SESSION='{"hook_event_name":"beforeMCPExecution","mcp_server_name":"plugin-figma-figma","tool_name":"create_session","tool_input":"{\"fileKey\":\"AbcFileKey123456789012\",\"description\":\"test\"}"}'
+out="$(figma_run before "$FIGMA_SESSION")"
+assert_contains "figma create_session always allow" "$out" '"permission": "allow"'
+
+FIGMA_POST='{"hook_event_name":"postToolUse","tool_name":"MCP:get_screenshot","tool_input":{"fileKey":"AbcFileKey123456789012","nodeId":"2057:4006"},"tool_output":"{\"image_url\":\"https://example.invalid/x.png\"}"}'
+out="$(figma_run after "$FIGMA_POST")"
+assert_contains "postToolUse cache context" "$out" '"additional_context"'
+assert_contains "postToolUse cache mentions path" "$out" 'figma-cache'
+
+out="$(figma_run before '{"hook_event_name":"beforeMCPExecution","mcp_server_name":"linear","tool_name":"list_issues","tool_input":"{}"}')"
+assert_contains "non-figma mcp allowed" "$out" '"permission": "allow"'
+
 exit $fail

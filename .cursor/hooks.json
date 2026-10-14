@@ -10,14 +10,22 @@
     "beforeShellExecution": [
       { "command": "scripts/ai-hooks/guard-secrets.sh cursor", "timeout": 10 }
     ],
+    "beforeMCPExecution": [
+      { "command": "scripts/ai-hooks/figma-cache.sh before cursor", "timeout": 15 }
+    ],
+    "afterMCPExecution": [
+      { "command": "scripts/ai-hooks/figma-cache.sh after cursor", "timeout": 60 }
+    ],
     "preToolUse": [
-      { "command": "scripts/ai-hooks/guard-secrets.sh cursor", "matcher": "Write|Delete", "timeout": 10 }
+      { "command": "scripts/ai-hooks/guard-secrets.sh cursor", "matcher": "Write|Delete", "timeout": 10 },
+      { "command": "scripts/ai-hooks/figma-cache.sh before cursor", "matcher": "MCP:", "timeout": 15 }
     ],
     "afterFileEdit": [
       { "command": "scripts/ai-hooks/format-kotlin.sh cursor", "timeout": 90 }
     ],
     "postToolUse": [
-      { "command": "scripts/ai-hooks/design-lint.sh cursor", "matcher": "Write", "timeout": 20 }
+      { "command": "scripts/ai-hooks/design-lint.sh cursor", "matcher": "Write", "timeout": 20 },
+      { "command": "scripts/ai-hooks/figma-cache.sh after cursor", "matcher": "MCP:", "timeout": 60 }
     ],
     "stop": [
       { "command": "scripts/ai-hooks/doc-sync-reminder.sh cursor", "timeout": 10, "loop_limit": 1 }

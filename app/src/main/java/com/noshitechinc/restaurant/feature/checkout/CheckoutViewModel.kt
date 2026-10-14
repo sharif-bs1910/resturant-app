@@ -145,6 +145,8 @@ class CheckoutViewModel @Inject constructor(deviceRoleStore: DeviceRoleStore) : 
                 name = draft.item.name,
                 unitCents = unitPrice(draft.item, draft.selected),
                 quantity = draft.quantity,
+                selectedModifierIds = draft.selected,
+                note = draft.note,
             )
             state.copy(lines = state.lines + line, overlay = CheckoutOverlay.None, draft = null)
         }
@@ -173,6 +175,7 @@ class CheckoutViewModel @Inject constructor(deviceRoleStore: DeviceRoleStore) : 
                     step = CheckoutStep.Payment,
                     overlay = CheckoutOverlay.None,
                     payAmountMode = PayAmountMode.Full,
+                    splitAmountDigits = "",
                     customChargeDigits = "",
                     cashTenderedDigits = "",
                     selectedPayLineIds = emptySet(),
@@ -190,11 +193,26 @@ class CheckoutViewModel @Inject constructor(deviceRoleStore: DeviceRoleStore) : 
         }
     }
 
+    fun onConfirmOrder() {
+        _uiState.update { state ->
+            if (state.step != CheckoutStep.Building || state.lines.isEmpty()) {
+                state
+            } else {
+                state.copy(overlay = CheckoutOverlay.OrderCreated)
+            }
+        }
+    }
+
+    fun onOrderCreatedOk() {
+        onPay()
+    }
+
     fun onBackFromPayment() {
         _uiState.update {
             it.copy(
                 step = CheckoutStep.Building,
                 overlay = CheckoutOverlay.None,
+                splitAmountDigits = "",
                 customChargeDigits = "",
                 cashTenderedDigits = "",
                 paidCents = 0,
@@ -241,15 +259,40 @@ class CheckoutViewModel @Inject constructor(deviceRoleStore: DeviceRoleStore) : 
         _uiState.update { state ->
             state.copy(
                 payAmountMode = mode,
-                customChargeDigits = if (mode == PayAmountMode.Full) "" else state.customChargeDigits,
+                splitCustomKind = if (mode == PayAmountMode.Custom) {
+                    SplitCustomKind.Evenly
+                } else {
+                    state.splitCustomKind
+                },
+                splitAmountDigits = "",
+                customChargeDigits = "",
                 cardChargeCustom = false,
-                selectedPayLineIds = when (mode) {
-                    PayAmountMode.ByItems ->
-                        state.selectedPayLineIds.ifEmpty { state.lines.map { it.id }.toSet() }
-
-                    else -> emptySet()
+                // Figma split-by-items starts at "0 of N selected"
+                selectedPayLineIds = emptySet(),
+                settlement = if (mode == PayAmountMode.ByItems && state.settlement.isDeliveryApp) {
+                    Settlement.Card
+                } else {
+                    state.settlement
                 },
             )
+        }
+    }
+
+    fun onSplitCustomKind(kind: SplitCustomKind) {
+        _uiState.update { state ->
+            state.copy(
+                splitCustomKind = kind,
+                splitAmountDigits = "",
+                customChargeDigits = "",
+                cardChargeCustom = false,
+                cashTenderedDigits = "",
+            )
+        }
+    }
+
+    fun onSplitGuestCount(count: Int) {
+        _uiState.update { state ->
+            state.copy(splitGuestCount = count.coerceIn(MinSplitGuests, MaxSplitGuests))
         }
     }
 
@@ -284,7 +327,8 @@ class CheckoutViewModel @Inject constructor(deviceRoleStore: DeviceRoleStore) : 
         _uiState.update { state ->
             val next = state.copy(
                 cardChargeCustom = enabled,
-                customChargeDigits = if (enabled) state.customChargeDigits else "",
+                customChargeDigits = "",
+                cashTenderedDigits = "",
             )
             if (state.settlement == Settlement.Cash && !enabled && next.chargeCents > 0) {
                 next.copy(cashTenderedDigits = next.chargeCents.toString())
@@ -316,7 +360,20 @@ class CheckoutViewModel @Inject constructor(deviceRoleStore: DeviceRoleStore) : 
     }
 
     fun onDeliveryApp(app: DeliveryApp) {
-        _uiState.update { it.copy(deliveryApp = app) }
+        _uiState.update {
+            it.copy(
+                deliveryApp = app,
+                settlement = when (app) {
+                    DeliveryApp.UberEats -> Settlement.UberEats
+                    DeliveryApp.DoorDash -> Settlement.DoorDash
+                    DeliveryApp.Grubhub -> Settlement.Grubhub
+                },
+                tipOption = TipOption.None,
+                tipCustomDigits = "",
+                cardChargeCustom = false,
+                cashTenderedDigits = "",
+            )
+        }
     }
 
     fun onPlatformOrderId(value: String) {
@@ -325,28 +382,70 @@ class CheckoutViewModel @Inject constructor(deviceRoleStore: DeviceRoleStore) : 
 
     fun onAmountDigit(digit: String) {
         _uiState.update { state ->
-            val allow = state.payAmountMode == PayAmountMode.Custom ||
-                state.payAmountMode == PayAmountMode.ByItems ||
+            val digitChar = digit.filter { it.isDigit() }
+            if (digitChar.isEmpty()) return@update state
+            if (state.payAmountMode == PayAmountMode.Custom &&
+                state.splitCustomKind == SplitCustomKind.CustomAmount &&
+                !state.cardChargeCustom
+            ) {
+                val next = (state.splitAmountDigits + digitChar).take(MaxAmountDigits)
+                return@update state.copy(splitAmountDigits = next)
+            }
+            val allow = state.payAmountMode == PayAmountMode.ByItems ||
                 (
                     (state.settlement == Settlement.Card || state.settlement == Settlement.Cash) &&
                         state.cardChargeCustom
                     )
             if (!allow) return@update state
-            val next = (state.customChargeDigits + digit.filter { it.isDigit() }).take(MaxAmountDigits)
+            val next = (state.customChargeDigits + digitChar).take(MaxAmountDigits)
             state.copy(customChargeDigits = next)
+        }
+    }
+
+    fun onSplitAmountDigits(digits: String) {
+        _uiState.update { state ->
+            if (state.payAmountMode != PayAmountMode.Custom ||
+                state.splitCustomKind != SplitCustomKind.CustomAmount
+            ) {
+                return@update state
+            }
+            val nextDigits = digits.filter { it.isDigit() }.take(MaxAmountDigits)
+            val next = state.copy(splitAmountDigits = nextDigits)
+            if (state.settlement == Settlement.Cash && !state.cardChargeCustom) {
+                next.copy(
+                    cashTenderedDigits = if (next.chargeCents > 0) {
+                        next.chargeCents.toString()
+                    } else {
+                        ""
+                    },
+                )
+            } else {
+                next
+            }
         }
     }
 
     fun onCustomAmountDigits(digits: String) {
         _uiState.update { state ->
-            val allow = state.payAmountMode == PayAmountMode.Custom ||
-                state.payAmountMode == PayAmountMode.ByItems ||
+            val allow = state.payAmountMode == PayAmountMode.ByItems ||
                 (
                     (state.settlement == Settlement.Card || state.settlement == Settlement.Cash) &&
                         state.cardChargeCustom
                     )
             if (!allow) return@update state
-            state.copy(customChargeDigits = digits.filter { it.isDigit() }.take(MaxAmountDigits))
+            val nextDigits = digits.filter { it.isDigit() }.take(MaxAmountDigits)
+            val next = state.copy(customChargeDigits = nextDigits)
+            if (state.settlement == Settlement.Cash && state.cardChargeCustom) {
+                next.copy(
+                    cashTenderedDigits = if (next.chargeCents > 0) {
+                        next.chargeCents.toString()
+                    } else {
+                        ""
+                    },
+                )
+            } else {
+                next
+            }
         }
     }
 
@@ -358,7 +457,16 @@ class CheckoutViewModel @Inject constructor(deviceRoleStore: DeviceRoleStore) : 
     }
 
     fun onAmountDelete() {
-        _uiState.update { it.copy(customChargeDigits = it.customChargeDigits.dropLast(1)) }
+        _uiState.update { state ->
+            if (state.payAmountMode == PayAmountMode.Custom &&
+                state.splitCustomKind == SplitCustomKind.CustomAmount &&
+                !state.cardChargeCustom
+            ) {
+                state.copy(splitAmountDigits = state.splitAmountDigits.dropLast(1))
+            } else {
+                state.copy(customChargeDigits = state.customChargeDigits.dropLast(1))
+            }
+        }
     }
 
     fun onCashDigit(digit: String) {
@@ -381,10 +489,9 @@ class CheckoutViewModel @Inject constructor(deviceRoleStore: DeviceRoleStore) : 
         }
     }
 
-    fun onCashTenderRoundUp() {
-        _uiState.update { state ->
-            val roundUp = nextCashRoundUpCents(state.chargeCents)
-            state.copy(cashTenderedDigits = if (roundUp > 0) roundUp.toString() else "")
+    fun onCashTenderNote(cents: Int) {
+        _uiState.update {
+            it.copy(cashTenderedDigits = if (cents > 0) cents.toString() else "")
         }
     }
 
@@ -421,6 +528,7 @@ class CheckoutViewModel @Inject constructor(deviceRoleStore: DeviceRoleStore) : 
                         pendingChargeCents = 0,
                         step = CheckoutStep.Confirmed,
                         overlay = CheckoutOverlay.None,
+                        splitAmountDigits = "",
                         customChargeDigits = "",
                         cashTenderedDigits = "",
                         selectedPayLineIds = emptySet(),
@@ -433,6 +541,7 @@ class CheckoutViewModel @Inject constructor(deviceRoleStore: DeviceRoleStore) : 
                         pendingChargeCents = 0,
                         step = CheckoutStep.Payment,
                         overlay = CheckoutOverlay.None,
+                        splitAmountDigits = "",
                         customChargeDigits = "",
                         cashTenderedDigits = "",
                         selectedPayLineIds = emptySet(),
@@ -533,6 +642,7 @@ class CheckoutViewModel @Inject constructor(deviceRoleStore: DeviceRoleStore) : 
                     Settlement.Grubhub -> DeliveryApp.Grubhub
                     else -> null
                 },
+                tipOption = if (settlement.isDeliveryApp) TipOption.None else state.tipOption,
                 cardChargeCustom = when (settlement) {
                     Settlement.Card, Settlement.Cash -> state.cardChargeCustom
                     else -> false
@@ -637,6 +747,7 @@ class CheckoutViewModel @Inject constructor(deviceRoleStore: DeviceRoleStore) : 
                         giftApplyDigits = "",
                         overlay = CheckoutOverlay.None,
                         step = CheckoutStep.Confirmed,
+                        splitAmountDigits = "",
                         customChargeDigits = "",
                         cashTenderedDigits = "",
                         cardChargeCustom = false,
@@ -648,6 +759,7 @@ class CheckoutViewModel @Inject constructor(deviceRoleStore: DeviceRoleStore) : 
                         giftAppliedCents = applied,
                         giftApplyDigits = "",
                         overlay = CheckoutOverlay.None,
+                        splitAmountDigits = "",
                         customChargeDigits = "",
                         cashTenderedDigits = "",
                         cardChargeCustom = false,
@@ -989,6 +1101,7 @@ class CheckoutViewModel @Inject constructor(deviceRoleStore: DeviceRoleStore) : 
                 orderNumber = order.number,
                 overlay = CheckoutOverlay.None,
                 payAmountMode = PayAmountMode.Full,
+                splitAmountDigits = "",
                 customChargeDigits = "",
                 cashTenderedDigits = "",
                 settlement = Settlement.Card,
@@ -1008,6 +1121,7 @@ class CheckoutViewModel @Inject constructor(deviceRoleStore: DeviceRoleStore) : 
                 orderNumber = order.number,
                 overlay = CheckoutOverlay.GiftCard,
                 payAmountMode = PayAmountMode.Full,
+                splitAmountDigits = "",
                 customChargeDigits = "",
                 cashTenderedDigits = "",
             )
@@ -1129,5 +1243,7 @@ class CheckoutViewModel @Inject constructor(deviceRoleStore: DeviceRoleStore) : 
         const val MaxZip = 5
         const val MaxAmountDigits = 7
         const val ProcessingDelayMs = 1_600L
+        const val MinSplitGuests = 2
+        const val MaxSplitGuests = 50
     }
 }

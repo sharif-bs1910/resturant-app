@@ -40,6 +40,11 @@ enum class PayAmountMode {
     ByItems,
 }
 
+enum class SplitCustomKind {
+    Evenly,
+    CustomAmount,
+}
+
 enum class TipOption {
     None,
     Percent5,
@@ -67,7 +72,14 @@ data class ModifierOption(val id: String, @param:StringRes val labelRes: Int, va
 
 data class ModifierGroup(val id: String, val titleRes: Int, val single: Boolean, val options: List<ModifierOption>)
 
-data class CartLine(val id: String, val name: String, val unitCents: Int, val quantity: Int)
+data class CartLine(
+    val id: String,
+    val name: String,
+    val unitCents: Int,
+    val quantity: Int,
+    val selectedModifierIds: Set<String> = emptySet(),
+    val note: String = "",
+)
 
 data class OpenOrder(
     val number: String,
@@ -99,8 +111,15 @@ val MenuCatalog = listOf(
 )
 
 val SampleCart = listOf(
-    CartLine("line-spicy", "Spicy Tonkotsu", 1_450, 2),
-    CartLine("line-gyoza", "Pork Gyoza", 700, 1),
+    CartLine(
+        "line-spicy",
+        "Spicy Tonkotsu",
+        1_450,
+        2,
+        selectedModifierIds = setOf("size-medium", "crust-thin"),
+        note = "No green onions",
+    ),
+    CartLine("line-gyoza", "Pork Gyoza", 700, 1, selectedModifierIds = setOf("size-small")),
     CartLine("line-matcha", "Matcha Lemonade", 500, 1),
 )
 
@@ -486,9 +505,21 @@ fun formatMoney(cents: Int): String {
     return "$sign$$dollars.$remainder"
 }
 
+/** Amount without currency symbol — Figma cash Full amount (97.12). */
+fun formatMoneyPlain(cents: Int): String = formatMoney(cents).removePrefix("$").removePrefix("−$").let { plain ->
+    if (cents < 0) "−$plain" else plain
+}
+
 fun nextCashRoundUpCents(chargeCents: Int): Int {
     if (chargeCents <= 0) return 0
     val step = 1_000
     val rounded = ((chargeCents + step - 1) / step) * step
     return if (rounded == chargeCents) chargeCents + step else rounded
+}
+
+/** Common US note denominations (cents) greater than the charge — e.g. $12.22 → $20, $50, $100. */
+fun usaCashNoteSuggestionsCents(chargeCents: Int, limit: Int = 3): List<Int> {
+    if (chargeCents <= 0) return emptyList()
+    val notes = listOf(1_000, 2_000, 5_000, 10_000)
+    return notes.filter { it > chargeCents }.take(limit)
 }

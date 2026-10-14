@@ -1,0 +1,99 @@
+{
+  "fileKey": "WB8vsKPxBmIrU2YO1DrWgn",
+  "sessionId": "83b07156-1d51-4a0b-8e82-3c73bba732dd",
+  "screens": [
+    {
+      "id": "4050:14471",
+      "name": "Pay with card \u2014 split custom amount",
+      "role": "screen"
+    },
+    {
+      "id": "4050:14640",
+      "name": "Pay with card \u2014 split by items",
+      "role": "screen"
+    },
+    {
+      "id": "4050:15900",
+      "name": "Pay full/custom with card (variant A)",
+      "role": "screen"
+    },
+    {
+      "id": "4050:15975",
+      "name": "Pay full/custom with card (variant B)",
+      "role": "screen"
+    },
+    {
+      "id": "4050:15999",
+      "name": "Pay full/custom with card (variant C)",
+      "role": "screen"
+    },
+    {
+      "id": "4050:16082",
+      "name": "Pay with Others \u2014 delivery",
+      "role": "screen"
+    },
+    {
+      "id": "4050:16102",
+      "name": "Order summary (compact / delivery)",
+      "role": "component"
+    },
+    {
+      "id": "4050:16231",
+      "name": "Add a tip",
+      "role": "component"
+    },
+    {
+      "id": "4050:16234",
+      "name": "Order summary (full)",
+      "role": "component"
+    }
+  ],
+  "labels_skipped": [
+    "4050:14469",
+    "4050:16074",
+    "4050:16228",
+    "4050:16081"
+  ],
+  "current_pass": 5,
+  "current_index": 0,
+  "findings": [
+    {
+      "pass": 1,
+      "sev": "P1",
+      "fix": "Guest chips height 40\u219248 (mediumHeight); Split evenly/Custom 400px oat-milk equal flex"
+    },
+    {
+      "pass": 2,
+      "sev": "P1",
+      "fix": "Choose payment label: Full+delivery Text/Default, split modes Muted (was delivery-only Default)"
+    },
+    {
+      "pass": 3,
+      "sev": "P1",
+      "fix": "Add a tip \u2192 labelMedium; Amount to pay label \u2192 titleSmall Normal"
+    },
+    {
+      "pass": 4,
+      "sev": "ok",
+      "fix": "Reused SurfaceChoiceRow/Chip, EqualPillChip, OrderSummaryPane, ChargePanel"
+    },
+    {
+      "pass": 5,
+      "sev": "ok",
+      "fix": "Previews for Card/ByItems/SplitCustom/Cash/Delivery; PillButton disabled 0.35 primary"
+    }
+  ],
+  "pass_status": {
+    "1": "done",
+    "2": "done",
+    "3": "done",
+    "4": "done",
+    "5": "done"
+  },
+  "remaining_p2": [
+    "SurfaceChoiceRow track radius Figma 12 vs radius.sm 8",
+    "Amount numericDisplay 40 vs Figma 36",
+    "Choose payment JetBrains 14 vs labelSmall 11 (token; needs IA to add)",
+    "Title Collect payment vs Payment details across Figma variants"
+  ]
+}

@@ -29,6 +29,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import com.noshitechinc.restaurant.R
 import com.noshitechinc.restaurant.core.designsystem.preview.ComponentPreviews
@@ -56,10 +57,14 @@ fun SheetCard(modifier: Modifier = Modifier, scroll: Boolean = true, content: @C
 @Composable
 fun SheetHeader(title: String, subtitle: String, onClose: () -> Unit) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
-        Column(Modifier.weight(1f)) {
+        Column(
+            Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.xs),
+        ) {
             Text(
                 title,
-                style = AppTheme.typography.titleLarge,
+                // Figma tender/payment-link titles: Inter Bold 22 → titleLarge + Bold
+                style = AppTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                 color = AppTheme.colors.textPrimary,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
@@ -97,10 +102,13 @@ fun NoteField(value: String, onValue: (String) -> Unit) {
         textStyle = AppTheme.typography.bodyMedium.copy(color = AppTheme.colors.textPrimary),
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(min = AppTheme.sizes.inputHeight)
+            .heightIn(min = AppTheme.sizes.minTouchTarget)
             .clip(shape)
-            .border(AppTheme.border.thin, AppTheme.colors.textPrimary.copy(alpha = 0.14f), shape)
-            .padding(AppTheme.spacing.md),
+            .border(AppTheme.border.thin, AppTheme.colors.textPrimary, shape)
+            .padding(
+                horizontal = AppTheme.spacing.md + AppTheme.spacing.xxs,
+                vertical = AppTheme.spacing.md,
+            ),
         decorationBox = { inner ->
             if (value.isEmpty()) {
                 Text(stringResource(R.string.checkout_note_hint), style = AppTheme.typography.bodyMedium, color = AppTheme.colors.textMuted)
@@ -111,14 +119,15 @@ fun NoteField(value: String, onValue: (String) -> Unit) {
 }
 
 @Composable
-fun GiftField(label: String, value: String, selected: Boolean, onClick: () -> Unit) {
+fun GiftField(label: String, value: String, selected: Boolean, placeholder: String = "", onClick: () -> Unit) {
     val shape = RoundedCornerShape(AppTheme.radius.sm)
+    val display = value.ifEmpty { placeholder }
     Column(Modifier.fillMaxWidth().clickable(onClick = onClick), verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.xs)) {
         Text(label, style = AppTheme.typography.labelSmall, color = AppTheme.colors.textMuted)
         Text(
-            text = value,
+            text = display,
             style = AppTheme.typography.bodyMedium,
-            color = AppTheme.colors.textPrimary,
+            color = if (value.isEmpty()) AppTheme.colors.textMuted else AppTheme.colors.textPrimary,
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(shape)

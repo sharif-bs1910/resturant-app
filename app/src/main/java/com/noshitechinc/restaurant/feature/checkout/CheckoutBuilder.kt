@@ -27,9 +27,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -37,10 +35,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import com.noshitechinc.restaurant.R
@@ -286,7 +286,7 @@ internal fun CartFooter(state: CheckoutUiState, actions: CheckoutActions) {
     TotalRow(stringResource(R.string.checkout_total), formatMoney(state.totalCents), emphasize = true)
     PillButton(
         stringResource(R.string.checkout_confirm_order),
-        actions.onPay,
+        actions.onConfirmOrder,
         Modifier.fillMaxWidth(),
         enabled = state.lines.isNotEmpty(),
     )
@@ -322,25 +322,48 @@ internal fun <T> ChoiceRow(label: String, options: List<T>, selected: T, onSelec
 
 @Composable
 internal fun CartLineRow(line: CartLine, actions: CheckoutActions) {
-    Column(verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.xs)) {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+    Column(
+        Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.sm + AppTheme.spacing.xxs),
+    ) {
+        Row(
+            Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.sm),
+        ) {
             Text(
                 line.name,
-                style = AppTheme.typography.titleSmall,
+                style = AppTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
                 color = AppTheme.colors.textPrimary,
                 modifier = Modifier.weight(1f),
                 maxLines = 1,
+                softWrap = false,
                 overflow = TextOverflow.Ellipsis,
             )
-            Text(formatMoney(line.unitCents * line.quantity), style = AppTheme.typography.priceSmall, color = AppTheme.colors.textPrimary)
+            Text(
+                formatMoney(line.unitCents * line.quantity),
+                style = AppTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                color = AppTheme.colors.textPrimary,
+                maxLines = 1,
+                softWrap = false,
+            )
         }
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.sm)) {
+        Row(
+            Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
             Stepper(line.quantity, onChange = { actions.onLineQuantity(line.id, it) })
             Text(
                 text = stringResource(R.string.checkout_remove),
-                style = AppTheme.typography.bodySmall,
+                style = AppTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
                 color = AppTheme.colors.textMuted,
-                modifier = Modifier.clickable { actions.onRemoveLine(line.id) },
+                textAlign = TextAlign.End,
+                maxLines = 1,
+                softWrap = false,
+                modifier = Modifier
+                    .widthIn(min = AppTheme.sizes.passcodeKeyWidth - AppTheme.spacing.sm)
+                    .clickable { actions.onRemoveLine(line.id) },
             )
         }
     }
@@ -349,31 +372,60 @@ internal fun CartLineRow(line: CartLine, actions: CheckoutActions) {
 @Composable
 fun Stepper(quantity: Int, onChange: (Int) -> Unit) {
     val shape = RoundedCornerShape(AppTheme.radius.sm)
+    val divider = AppTheme.colors.textPrimary.copy(alpha = 0.14f)
+    // Figma Qty: h40, cells 52 / 60 / 52
+    val cellWidth = AppTheme.sizes.passcodeCellWidth - AppTheme.spacing.xs
+    val valueWidth = AppTheme.sizes.passcodeCellWidth + AppTheme.spacing.xs
     Row(
         modifier = Modifier
+            .height(AppTheme.sizes.buttonSmall)
             .clip(shape)
-            .border(AppTheme.border.thin, AppTheme.colors.textPrimary.copy(alpha = 0.14f), shape),
+            .background(AppTheme.colors.card)
+            .border(AppTheme.border.thin, divider, shape),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        StepperKey(Icons.Filled.Remove, stringResource(R.string.checkout_decrease)) { onChange(quantity - 1) }
+        StepperKey(
+            label = "−",
+            description = stringResource(R.string.checkout_decrease),
+            enabled = quantity > 1,
+            modifier = Modifier.width(cellWidth),
+        ) { onChange(quantity - 1) }
+        Box(Modifier.width(AppTheme.border.thin).fillMaxHeight().background(divider))
         Text(
             text = quantity.toString(),
-            style = AppTheme.typography.titleSmall,
+            style = AppTheme.typography.titleMedium,
             color = AppTheme.colors.textPrimary,
-            modifier = Modifier.width(AppTheme.sizes.stepperValueMinWidth),
+            modifier = Modifier.width(valueWidth),
             textAlign = TextAlign.Center,
+            maxLines = 1,
+            softWrap = false,
         )
-        StepperKey(Icons.Filled.Add, stringResource(R.string.checkout_increase)) { onChange(quantity + 1) }
+        Box(Modifier.width(AppTheme.border.thin).fillMaxHeight().background(divider))
+        StepperKey(
+            label = "+",
+            description = stringResource(R.string.checkout_increase),
+            modifier = Modifier.width(cellWidth),
+        ) { onChange(quantity + 1) }
     }
 }
 
 @Composable
-internal fun StepperKey(icon: androidx.compose.ui.graphics.vector.ImageVector, description: String, onClick: () -> Unit) {
+internal fun StepperKey(label: String, description: String, modifier: Modifier = Modifier, enabled: Boolean = true, onClick: () -> Unit) {
     Box(
-        Modifier.size(AppTheme.sizes.minTouchTarget).clickable(onClick = onClick),
+        modifier
+            .fillMaxHeight()
+            .semantics { contentDescription = description }
+            .clickable(enabled = enabled, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
-        Icon(icon, contentDescription = description, tint = AppTheme.colors.textPrimary)
+        Text(
+            text = label,
+            style = AppTheme.typography.headlineSmall,
+            color = if (enabled) AppTheme.colors.textPrimary else AppTheme.colors.textMuted,
+            textAlign = TextAlign.Center,
+            maxLines = 1,
+            softWrap = false,
+        )
     }
 }
 
@@ -426,7 +478,7 @@ private fun BuilderContentPreview() {
     PreviewSurface {
         BuilderContent(
             CheckoutUiState(step = CheckoutStep.Building, lines = PhoneCart, channel = OrderChannel.Phone),
-            CheckoutActions({}, {}, {}, {}, { _, _ -> }, {}, {}, {}, {}),
+            CheckoutActions({}, {}, {}, {}, { _, _ -> }, {}, {}, {}, {}, {}),
         )
     }
 }

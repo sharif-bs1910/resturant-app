@@ -78,13 +78,18 @@ class CheckoutViewModelTest {
         vm.onLoadPhoneDemoCart()
         vm.onPay()
         vm.onPayAmountMode(PayAmountMode.ByItems)
-        assertEquals(2, vm.uiState.value.selectedPayLineIds.size)
-        vm.onSelectAllPayLines()
+        assertEquals(0, vm.uiState.value.selectedPayLineIds.size)
+        assertEquals(0, vm.uiState.value.amountToPayCents)
+        assertEquals(0, vm.uiState.value.chargeCents)
+        assertTrue(vm.uiState.value.dueCents > 0)
         vm.onTogglePayLine("line-gyoza")
         val state = vm.uiState.value
+        assertEquals(setOf("line-gyoza"), state.selectedPayLineIds)
         assertEquals(700, state.selectedSubtotalCents)
         assertEquals(61, state.selectedTaxCents)
+        assertEquals(761, state.amountToPayCents)
         assertEquals(761, state.chargeCents)
+        assertEquals(false, state.cardChargeCustom)
     }
 
     @Test
@@ -169,10 +174,10 @@ class CheckoutViewModelTest {
         vm.onPay()
         vm.onSettlement(Settlement.Cash)
         assertEquals(3_915, vm.uiState.value.cashTenderedCents)
-        assertEquals(4_000, nextCashRoundUpCents(vm.uiState.value.chargeCents))
-        vm.onCashTenderRoundUp()
-        assertEquals(4_000, vm.uiState.value.cashTenderedCents)
-        assertEquals(85, vm.uiState.value.changeDueCents)
+        assertEquals(listOf(5_000, 10_000), usaCashNoteSuggestionsCents(vm.uiState.value.chargeCents))
+        vm.onCashTenderNote(5_000)
+        assertEquals(5_000, vm.uiState.value.cashTenderedCents)
+        assertEquals(1_085, vm.uiState.value.changeDueCents)
         vm.onCollectPayment()
         mainDispatcherRule.dispatcher.scheduler.advanceTimeBy(2_000)
         mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
@@ -201,7 +206,8 @@ class CheckoutViewModelTest {
         vm.onLoadPhoneDemoCart()
         vm.onPay()
         vm.onPayAmountMode(PayAmountMode.Custom)
-        vm.onCustomAmountDigits("1000")
+        vm.onSplitCustomKind(SplitCustomKind.CustomAmount)
+        vm.onSplitAmountDigits("1000")
         assertEquals(1_000, vm.uiState.value.chargeCents)
         vm.onCollectPayment()
         mainDispatcherRule.dispatcher.scheduler.advanceTimeBy(2_000)
@@ -210,6 +216,20 @@ class CheckoutViewModelTest {
         assertEquals(1_000, vm.uiState.value.paidCents)
         assertEquals(2_915, vm.uiState.value.dueCents)
         assertTrue(vm.uiState.value.paidProgress > 0.2f)
+    }
+
+    @Test
+    fun `split evenly divides remaining by guest count`() = runTest {
+        val vm = CheckoutViewModel(DeviceRoleStore())
+        vm.onNewOrder()
+        vm.onLoadPhoneDemoCart()
+        vm.onPay()
+        vm.onPayAmountMode(PayAmountMode.Custom)
+        assertEquals(SplitCustomKind.Evenly, vm.uiState.value.splitCustomKind)
+        vm.onSplitGuestCount(4)
+        val remaining = vm.uiState.value.remainingBeforeTipCents
+        assertEquals(remaining / 4, vm.uiState.value.amountToPayCents)
+        assertEquals(remaining / 4, vm.uiState.value.chargeCents)
     }
 
     @Test
@@ -397,9 +417,14 @@ class CheckoutViewModelTest {
         vm.onOpenItem(item)
         val draft = vm.uiState.value.draft
         assertEquals(1_450, draft?.let { unitPrice(it.item, it.selected) })
+        val selected = requireNotNull(draft).selected
+        vm.onDraftNote("No green onions")
         vm.onAddToOrder()
         assertEquals(CheckoutOverlay.None, vm.uiState.value.overlay)
         assertEquals(1, vm.uiState.value.lines.size)
+        val line = vm.uiState.value.lines.single()
+        assertEquals(selected, line.selectedModifierIds)
+        assertEquals("No green onions", line.note)
     }
 
     @Test
@@ -462,6 +487,27 @@ class CheckoutViewModelTest {
         assertEquals(true, vm.uiState.value.kitchenBusy)
         vm.onKitchenMode(false)
         assertEquals(false, vm.uiState.value.kitchenBusy)
+    }
+
+    @Test
+    fun `time log section opens`() = runTest {
+        val vm = CheckoutViewModel(DeviceRoleStore())
+        vm.onSection(KitchenSection.TimeLog)
+        assertEquals(KitchenSection.TimeLog, vm.uiState.value.section)
+    }
+
+    @Test
+    fun `confirm order shows success modal and ok opens payment`() = runTest {
+        val vm = CheckoutViewModel(DeviceRoleStore())
+        vm.onNewOrder()
+        vm.onLoadPhoneDemoCart()
+        vm.onConfirmOrder()
+        assertEquals(CheckoutOverlay.OrderCreated, vm.uiState.value.overlay)
+        assertEquals(CheckoutStep.Building, vm.uiState.value.step)
+        vm.onOrderCreatedOk()
+        assertEquals(CheckoutOverlay.None, vm.uiState.value.overlay)
+        assertEquals(CheckoutStep.Payment, vm.uiState.value.step)
+        assertTrue(vm.uiState.value.lines.isNotEmpty())
     }
 
     @Test

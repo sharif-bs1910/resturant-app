@@ -113,10 +113,19 @@ internal data class ButtonColors(val container: Color, val content: Color, val b
 internal fun buttonColors(variant: ButtonVariant, enabled: Boolean, pressed: Boolean): ButtonColors {
     val c = AppTheme.colors
     if (!enabled) {
-        return if (variant == ButtonVariant.Outline) {
-            ButtonColors(Color.Transparent, c.textDisabled, c.outlineVariant)
-        } else {
-            ButtonColors(c.disabledContainer, c.textDisabled, null)
+        return when (variant) {
+            ButtonVariant.Outline ->
+                ButtonColors(Color.Transparent, c.textDisabled, c.outlineVariant)
+
+            ButtonVariant.Primary ->
+                // Figma / Noshi: inactive primary is faded brand fill + on-primary text (not grey).
+                ButtonColors(c.primary.copy(alpha = 0.35f), c.onPrimary, null)
+
+            ButtonVariant.Destructive ->
+                ButtonColors(c.destructive.copy(alpha = 0.35f), c.onDestructive, null)
+
+            ButtonVariant.Secondary ->
+                ButtonColors(c.disabledContainer, c.textDisabled, null)
         }
     }
     return when (variant) {

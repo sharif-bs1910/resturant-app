@@ -2,6 +2,8 @@ package com.noshitechinc.restaurant.feature.signin
 
 import com.noshitechinc.restaurant.core.ui.BaseViewModel
 import com.noshitechinc.restaurant.core.ui.UiEffect
+import com.noshitechinc.restaurant.feature.role.DeviceRole
+import com.noshitechinc.restaurant.feature.role.DeviceRoleStore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -11,8 +13,10 @@ import kotlinx.coroutines.flow.update
 
 data object OpenCheckout : UiEffect
 
+data object OpenSelfService : UiEffect
+
 @HiltViewModel
-class SignInViewModel @Inject constructor() : BaseViewModel() {
+class SignInViewModel @Inject constructor(private val deviceRoleStore: DeviceRoleStore) : BaseViewModel() {
     private val _uiState = MutableStateFlow(SignInUiState())
     val uiState: StateFlow<SignInUiState> = _uiState.asStateFlow()
 
@@ -21,7 +25,15 @@ class SignInViewModel @Inject constructor() : BaseViewModel() {
         if (current.pin.length >= PIN_LENGTH) return
         val next = current.pin + digit
         _uiState.update { it.copy(pin = next, hasError = false) }
-        if (next.length == PIN_LENGTH) sendEffect(OpenCheckout)
+        if (next.length == PIN_LENGTH) {
+            sendEffect(
+                if (deviceRoleStore.role.value == DeviceRole.SelfService) {
+                    OpenSelfService
+                } else {
+                    OpenCheckout
+                },
+            )
+        }
     }
 
     fun onDelete() {

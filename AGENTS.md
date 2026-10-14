@@ -30,6 +30,7 @@ Then summarize the current phase, the task (with its ticket ID) and the constrai
 - Instrumented tests: `./gradlew connectedDevDebugAndroidTest`
 - Design lint: `scripts/ai-hooks/design-lint-check.sh app/src/main` (prints nothing when clean)
 - Hook tests: `scripts/ai-hooks/tests/run-tests.sh`
+- Figma MCP cache: live Figma MCP results are stored under `.ai/figma-cache/` (gitignored). Re-use the cache for validation; pass `"forceRefresh": true` on a tool call (or `FIGMA_CACHE_BYPASS=1`) to refresh. List entries with `scripts/ai-hooks/figma-cache-lookup.sh <fileKey> [nodeId]`. After building UI from Figma, run the `figma-ui-review` skill (5 passes, cache-first).
 
 ## Package map
 
@@ -74,6 +75,7 @@ Canonical skills live in `.cursor/skills/` (Claude Code reads them through the `
 - `add-api-endpoint` — add an endpoint end to end: registry row, DTOs, Retrofit method, mapper, repository, binding, test.
 - `impact-analysis` — write `IA-YYYY-MM-DD-<topic>.md` for a risky change and stop for approval.
 - `review-change` — AI self-review checklist before handing a change to the human.
+- `figma-ui-review` — after Figma-driven UI work, run 5 cache-first review passes (structure → color/backgrounds → typography → components → polish) against `.ai/figma-cache/`.
 - `doc-sync` — update the context-repo docs affected by a change.
 
 ## Doc sync

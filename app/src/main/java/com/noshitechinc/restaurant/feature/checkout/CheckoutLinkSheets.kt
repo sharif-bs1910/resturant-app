@@ -30,6 +30,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import com.noshitechinc.restaurant.R
@@ -42,15 +43,16 @@ internal fun TenderSheet(state: CheckoutUiState, actions: OverlayActions) {
     PaymentLinkSheet(state, actions)
 }
 
+/** Figma 4050:14205 — Payment link tender sheet (no progress bar / settlement). */
 @Composable
 internal fun PaymentLinkSheet(state: CheckoutUiState, actions: OverlayActions) {
-    SheetCard(Modifier.widthIn(max = AppTheme.sizes.dialogMaxWidth)) {
+    SheetCard(Modifier.widthIn(max = AppTheme.sizes.dialogMaxWidth), scroll = false) {
         SheetHeader(
             stringResource(R.string.checkout_payment_link),
             stringResource(R.string.checkout_payment_link_subtitle),
             actions.onDismiss,
         )
-        Column(verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.xxs)) {
+        Column(verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.xs)) {
             Text(
                 stringResource(R.string.checkout_amount_due),
                 style = AppTheme.typography.labelSmall,
@@ -58,10 +60,10 @@ internal fun PaymentLinkSheet(state: CheckoutUiState, actions: OverlayActions) {
             )
             Text(
                 formatMoney(state.dueCents),
-                style = AppTheme.typography.numericDisplay,
+                // Figma AmtVal: Inter Bold ~34 → nearest numericDisplay + Bold
+                style = AppTheme.typography.numericDisplay.copy(fontWeight = FontWeight.Bold),
                 color = AppTheme.colors.primary,
             )
-            PaidProgressBar(state.paidProgress)
         }
         Row(
             modifier = Modifier
@@ -69,12 +71,12 @@ internal fun PaymentLinkSheet(state: CheckoutUiState, actions: OverlayActions) {
                 .clip(RoundedCornerShape(AppTheme.radius.sm))
                 .border(AppTheme.border.thin, AppTheme.colors.textPrimary, RoundedCornerShape(AppTheme.radius.sm))
                 .clickable(onClick = actions.onEditPaymentLink)
-                .padding(horizontal = AppTheme.spacing.md, vertical = AppTheme.spacing.md),
+                .padding(horizontal = AppTheme.spacing.md, vertical = AppTheme.spacing.sm + AppTheme.spacing.xxs),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Row(
-                horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.sm),
+                horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.md),
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.weight(1f),
             ) {
@@ -99,8 +101,16 @@ internal fun PaymentLinkSheet(state: CheckoutUiState, actions: OverlayActions) {
                 color = AppTheme.colors.textMuted,
             )
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.md), modifier = Modifier.fillMaxWidth()) {
-            PillButton(stringResource(R.string.checkout_close_action), actions.onDismiss, Modifier.weight(1f), filled = false)
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.md),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            PillButton(
+                stringResource(R.string.checkout_close_action),
+                actions.onDismiss,
+                Modifier.weight(1f),
+                filled = false,
+            )
             PillButton(
                 stringResource(R.string.checkout_send_link_to, phoneTail(state.customerPhone)),
                 actions.onSendPaymentLink,
@@ -183,5 +193,73 @@ internal fun SavedSheet(state: CheckoutUiState, onDone: () -> Unit) {
             MoneyRow(stringResource(R.string.checkout_recap_payment), stringResource(R.string.checkout_link_sent))
         }
         PillButton(stringResource(R.string.checkout_close_action), onDone, Modifier.fillMaxWidth())
+    }
+}
+
+/** Figma 4050:13617 — Cancel ghost is hidden; OK full-width pill. */
+@Composable
+internal fun OrderCreatedSheet(onOk: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .widthIn(max = AppTheme.sizes.keypadMaxWidth)
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(AppTheme.radius.md))
+            .background(AppTheme.colors.card)
+            .padding(AppTheme.spacing.xl),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.xl),
+    ) {
+        Box(
+            Modifier
+                .size(AppTheme.sizes.buttonLarge)
+                .clip(CircleShape)
+                .background(AppTheme.colors.success),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(Icons.Filled.Check, contentDescription = null, tint = AppTheme.colors.card)
+        }
+        Column(
+            Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.sm),
+        ) {
+            Text(
+                stringResource(R.string.checkout_order_created_title),
+                style = AppTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                color = AppTheme.colors.textPrimary,
+                textAlign = TextAlign.Center,
+            )
+            Text(
+                stringResource(R.string.checkout_order_created_body),
+                style = AppTheme.typography.bodyMedium,
+                color = AppTheme.colors.textDisabled,
+                textAlign = TextAlign.Center,
+            )
+        }
+        PillButton(stringResource(R.string.action_ok), onOk, Modifier.fillMaxWidth())
+    }
+}
+
+@ScreenPreviews
+@Composable
+private fun PaymentLinkSheetPreview() {
+    PreviewSurface {
+        PaymentLinkSheet(
+            CheckoutUiState(
+                overlay = CheckoutOverlay.PaymentLink,
+                lines = PhoneCart,
+                customerName = "Jhon smith",
+                customerPhone = "(415) 555-0192",
+            ),
+            OverlayActions({}, { _, _ -> }, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}),
+        )
+    }
+}
+
+@ScreenPreviews
+@Composable
+private fun OrderCreatedSheetPreview() {
+    PreviewSurface {
+        OrderCreatedSheet(onOk = {})
     }
 }
