@@ -30,6 +30,7 @@ enum class CheckoutOverlay {
     Address,
     Draft,
     Saved,
+    OrderCreated,
     Customer,
     PaymentLink,
     PaymentLinkEdit,

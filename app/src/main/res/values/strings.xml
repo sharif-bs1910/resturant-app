@@ -378,6 +378,8 @@
     <string name="checkout_total">Total</string>
     <string name="checkout_pay_now">Pay now</string>
     <string name="checkout_confirm_order">Confirm order</string>
+    <string name="checkout_order_created_title">Order create successfully</string>
+    <string name="checkout_order_created_body">Your order has been placed successfully.</string>
     <string name="checkout_save_draft">Save draft</string>
     <string name="checkout_search_menu">Search menu…</string>
     <string name="checkout_decrease">Decrease</string>

@@ -29,6 +29,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import com.noshitechinc.restaurant.R
 import com.noshitechinc.restaurant.core.designsystem.preview.ComponentPreviews
@@ -56,10 +57,14 @@ fun SheetCard(modifier: Modifier = Modifier, scroll: Boolean = true, content: @C
 @Composable
 fun SheetHeader(title: String, subtitle: String, onClose: () -> Unit) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
-        Column(Modifier.weight(1f)) {
+        Column(
+            Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.xs),
+        ) {
             Text(
                 title,
-                style = AppTheme.typography.titleLarge,
+                // Figma tender/payment-link titles: Inter Bold 22 → titleLarge + Bold
+                style = AppTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                 color = AppTheme.colors.textPrimary,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,

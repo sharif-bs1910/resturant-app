@@ -15,6 +15,7 @@ data class OverlayActions(
     val onApplyGiftCard: () -> Unit,
     val onBackToTender: () -> Unit,
     val onBackToOrders: () -> Unit,
+    val onOrderCreatedOk: () -> Unit = {},
     val onStreet: (String) -> Unit = {},
     val onApt: (String) -> Unit = {},
     val onZip: (String) -> Unit = {},

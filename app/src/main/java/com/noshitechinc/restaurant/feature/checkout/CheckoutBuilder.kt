@@ -286,7 +286,7 @@ internal fun CartFooter(state: CheckoutUiState, actions: CheckoutActions) {
     TotalRow(stringResource(R.string.checkout_total), formatMoney(state.totalCents), emphasize = true)
     PillButton(
         stringResource(R.string.checkout_confirm_order),
-        actions.onPay,
+        actions.onConfirmOrder,
         Modifier.fillMaxWidth(),
         enabled = state.lines.isNotEmpty(),
     )
@@ -478,7 +478,7 @@ private fun BuilderContentPreview() {
     PreviewSurface {
         BuilderContent(
             CheckoutUiState(step = CheckoutStep.Building, lines = PhoneCart, channel = OrderChannel.Phone),
-            CheckoutActions({}, {}, {}, {}, { _, _ -> }, {}, {}, {}, {}),
+            CheckoutActions({}, {}, {}, {}, { _, _ -> }, {}, {}, {}, {}, {}),
         )
     }
 }

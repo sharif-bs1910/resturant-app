@@ -33,6 +33,7 @@ fun CheckoutOverlayHost(state: CheckoutUiState, actions: OverlayActions) {
                 CheckoutOverlay.Address -> AddressSheet(state, actions)
                 CheckoutOverlay.Draft -> DraftSheet(state, actions)
                 CheckoutOverlay.Saved -> SavedSheet(state, actions.onBackToOrders)
+                CheckoutOverlay.OrderCreated -> OrderCreatedSheet(onOk = actions.onOrderCreatedOk)
                 CheckoutOverlay.Customer -> CustomerSheet(state, actions)
                 CheckoutOverlay.PaymentLink -> PaymentLinkSheet(state, actions)
                 CheckoutOverlay.PaymentLinkEdit -> PaymentLinkEditSheet(state, actions)

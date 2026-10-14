@@ -497,6 +497,20 @@ class CheckoutViewModelTest {
     }
 
     @Test
+    fun `confirm order shows success modal and ok opens payment`() = runTest {
+        val vm = CheckoutViewModel(DeviceRoleStore())
+        vm.onNewOrder()
+        vm.onLoadPhoneDemoCart()
+        vm.onConfirmOrder()
+        assertEquals(CheckoutOverlay.OrderCreated, vm.uiState.value.overlay)
+        assertEquals(CheckoutStep.Building, vm.uiState.value.step)
+        vm.onOrderCreatedOk()
+        assertEquals(CheckoutOverlay.None, vm.uiState.value.overlay)
+        assertEquals(CheckoutStep.Payment, vm.uiState.value.step)
+        assertTrue(vm.uiState.value.lines.isNotEmpty())
+    }
+
+    @Test
     fun `pos role is loaded and reporting section can open`() = runTest {
         val store = DeviceRoleStore().also { it.setRole(DeviceRole.Pos) }
         val vm = CheckoutViewModel(store)

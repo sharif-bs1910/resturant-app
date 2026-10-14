@@ -8,6 +8,7 @@ data class CheckoutActions(
     val onLineQuantity: (String, Int) -> Unit,
     val onRemoveLine: (String) -> Unit,
     val onPay: () -> Unit,
+    val onConfirmOrder: () -> Unit,
     val onSaveDraft: () -> Unit,
     val onEditAddress: () -> Unit,
     val onEditCustomer: () -> Unit = {},

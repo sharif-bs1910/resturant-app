@@ -193,6 +193,20 @@ class CheckoutViewModel @Inject constructor(deviceRoleStore: DeviceRoleStore) : 
         }
     }
 
+    fun onConfirmOrder() {
+        _uiState.update { state ->
+            if (state.step != CheckoutStep.Building || state.lines.isEmpty()) {
+                state
+            } else {
+                state.copy(overlay = CheckoutOverlay.OrderCreated)
+            }
+        }
+    }
+
+    fun onOrderCreatedOk() {
+        onPay()
+    }
+
     fun onBackFromPayment() {
         _uiState.update {
             it.copy(

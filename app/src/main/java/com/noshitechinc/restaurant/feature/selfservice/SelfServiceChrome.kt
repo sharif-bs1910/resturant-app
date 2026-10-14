@@ -31,10 +31,11 @@ fun SelfServiceTopBar(modifier: Modifier = Modifier) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                // Figma Top Navigation (2057:4006): h=72, pad 16/32; mark 40×40 (not logoMark 64).
                 .padding(horizontal = AppTheme.spacing.xxl, vertical = AppTheme.spacing.lg),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            NoshiLockup(surface = LogoSurface.Light, markSize = AppTheme.sizes.logoMark)
+            NoshiLockup(surface = LogoSurface.Light, markSize = AppTheme.sizes.buttonSmall)
         }
         Box(
             Modifier

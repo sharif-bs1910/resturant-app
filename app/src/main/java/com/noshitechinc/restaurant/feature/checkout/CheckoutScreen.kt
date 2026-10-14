@@ -58,6 +58,7 @@ fun CheckoutRoute(viewModel: CheckoutViewModel = hiltViewModel()) {
             onLineQuantity = viewModel::onLineQuantity,
             onRemoveLine = viewModel::onRemoveLine,
             onPay = viewModel::onPay,
+            onConfirmOrder = viewModel::onConfirmOrder,
             onSaveDraft = viewModel::onSaveDraft,
             onEditAddress = viewModel::onEditAddress,
             onEditCustomer = viewModel::onEditCustomer,
@@ -117,6 +118,7 @@ fun CheckoutRoute(viewModel: CheckoutViewModel = hiltViewModel()) {
             onApplyGiftCard = viewModel::onApplyGiftCard,
             onBackToTender = viewModel::onBackToTender,
             onBackToOrders = viewModel::onClosePaymentSent,
+            onOrderCreatedOk = viewModel::onOrderCreatedOk,
             onStreet = viewModel::onStreet,
             onApt = viewModel::onApt,
             onZip = viewModel::onZip,
@@ -402,7 +404,7 @@ private fun CheckoutBuilderPreview() {
     }
 }
 
-private fun emptyActions() = CheckoutActions({}, {}, {}, {}, { _, _ -> }, {}, {}, {}, {})
+private fun emptyActions() = CheckoutActions({}, {}, {}, {}, { _, _ -> }, {}, {}, {}, {}, {})
 
 private fun emptyQueue() = QueueActions({}, {}, {}, {}, {}, {}, {}, {})
 
