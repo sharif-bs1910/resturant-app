@@ -2,10 +2,18 @@ package com.noshitechinc.restaurant.feature.checkout
 
 import androidx.lifecycle.viewModelScope
 import com.noshitechinc.restaurant.R
+import com.noshitechinc.restaurant.core.common.ApiResult
+import com.noshitechinc.restaurant.core.common.AppError
 import com.noshitechinc.restaurant.core.common.UiText
+import com.noshitechinc.restaurant.core.terminal.TerminalClient
+import com.noshitechinc.restaurant.core.terminal.TerminalConfig
+import com.noshitechinc.restaurant.core.terminal.TerminalConnectionState
+import com.noshitechinc.restaurant.core.terminal.model.PaymentOutcome
+import com.noshitechinc.restaurant.core.terminal.model.PaymentRequest
 import com.noshitechinc.restaurant.core.ui.BaseViewModel
 import com.noshitechinc.restaurant.core.ui.MessageTone
 import com.noshitechinc.restaurant.core.ui.ShowMessage
+import com.noshitechinc.restaurant.domain.repository.TerminalPaymentRepository
 import com.noshitechinc.restaurant.feature.role.DeviceRoleStore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -17,7 +25,12 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 @HiltViewModel
-class CheckoutViewModel @Inject constructor(deviceRoleStore: DeviceRoleStore) : BaseViewModel() {
+class CheckoutViewModel @Inject constructor(
+    deviceRoleStore: DeviceRoleStore,
+    private val terminalClient: TerminalClient,
+    private val terminalPayments: TerminalPaymentRepository,
+    private val terminalConfig: TerminalConfig,
+) : BaseViewModel() {
     private val _uiState = MutableStateFlow(CheckoutUiState(deviceRole = deviceRoleStore.role.value))
     val uiState: StateFlow<CheckoutUiState> = _uiState.asStateFlow()
     private var lineSerial = 0
@@ -499,9 +512,18 @@ class CheckoutViewModel @Inject constructor(deviceRoleStore: DeviceRoleStore) : 
         _uiState.update { it.copy(cashTenderedDigits = it.cashTenderedDigits.dropLast(1)) }
     }
 
+    fun onTerminalLocationDenied() {
+        sendEffect(
+            ShowMessage(
+                UiText.Resource(R.string.checkout_terminal_need_location),
+                MessageTone.Error,
+            ),
+        )
+    }
+
     fun onCollectPayment() {
         if (!tryStartPayment()) return
-        viewModelScope.launch {
+        launchSubmit(KEY_COLLECT_PAYMENT) {
             val charge = _uiState.value.chargeCents.coerceAtLeast(0)
             _uiState.update { state ->
                 val tendered = if (state.settlement == Settlement.Cash && state.cashTenderedDigits.isEmpty()) {
@@ -515,46 +537,124 @@ class CheckoutViewModel @Inject constructor(deviceRoleStore: DeviceRoleStore) : 
                     cashTenderedDigits = tendered,
                 )
             }
-            delay(ProcessingDelayMs)
-            _uiState.update { state ->
-                val appliedCharge = state.pendingChargeCents.coerceAtLeast(charge)
-                val nextPaid = state.paidCents + appliedCharge
-                val remaining = (
-                    state.totalCents + state.tipCents - state.giftAppliedCents - nextPaid
-                    ).coerceAtLeast(0)
-                if (remaining <= 0) {
-                    state.copy(
-                        paidCents = nextPaid,
-                        pendingChargeCents = 0,
-                        step = CheckoutStep.Confirmed,
-                        overlay = CheckoutOverlay.None,
-                        splitAmountDigits = "",
-                        customChargeDigits = "",
-                        cashTenderedDigits = "",
-                        selectedPayLineIds = emptySet(),
-                        cardChargeCustom = false,
-                        payAmountMode = PayAmountMode.Full,
-                    )
-                } else {
-                    val next = state.copy(
-                        paidCents = nextPaid,
-                        pendingChargeCents = 0,
-                        step = CheckoutStep.Payment,
-                        overlay = CheckoutOverlay.None,
-                        splitAmountDigits = "",
-                        customChargeDigits = "",
-                        cashTenderedDigits = "",
-                        selectedPayLineIds = emptySet(),
-                        cardChargeCustom = false,
-                        payAmountMode = PayAmountMode.Full,
-                        tipOption = TipOption.None,
-                        tipCustomDigits = "",
-                    )
-                    if (next.settlement == Settlement.Cash && next.chargeCents > 0) {
-                        next.copy(cashTenderedDigits = next.chargeCents.toString())
-                    } else {
-                        next
+            val useTerminal = terminalConfig.enabled && _uiState.value.settlement == Settlement.Card
+            if (useTerminal) {
+                when (val terminalResult = collectCardViaTerminal(charge)) {
+                    is ApiResult.Failure -> {
+                        _uiState.update {
+                            it.copy(overlay = CheckoutOverlay.None, pendingChargeCents = 0)
+                        }
+                        presentError(terminalResult.error)
+                        return@launchSubmit
                     }
+
+                    is ApiResult.Success -> Unit
+                }
+            } else {
+                delay(ProcessingDelayMs)
+            }
+            applyCollectedCharge(charge)
+        }
+    }
+
+    private suspend fun collectCardViaTerminal(chargeCents: Int): ApiResult<Unit> {
+        when (val init = terminalClient.ensureInitialized()) {
+            is ApiResult.Failure -> return init
+            is ApiResult.Success -> Unit
+        }
+        if (terminalClient.connectionState.value != TerminalConnectionState.Connected) {
+            when (val discovered = terminalClient.discoverReaders(terminalConfig.useSimulatedReader)) {
+                is ApiResult.Failure -> return discovered
+
+                is ApiResult.Success -> {
+                    val reader = discovered.data.firstOrNull()
+                        ?: return ApiResult.Failure(AppError.NotFound)
+                    val locationId = if (terminalConfig.useSimulatedReader) {
+                        reader.locationId.orEmpty().ifBlank { terminalConfig.locationId }
+                    } else {
+                        terminalConfig.locationId
+                    }
+                    when (val connected = terminalClient.connect(reader, locationId)) {
+                        is ApiResult.Failure -> return ApiResult.Failure(connected.error)
+                        is ApiResult.Success -> Unit
+                    }
+                }
+            }
+        }
+        when (
+            val created = terminalPayments.createPaymentIntent(
+                PaymentRequest(amountCents = chargeCents.toLong(), currency = "usd"),
+            )
+        ) {
+            is ApiResult.Failure -> return created
+
+            is ApiResult.Success -> {
+                when (val paid = terminalClient.processPayment(created.data.clientSecret)) {
+                    is ApiResult.Failure -> return paid
+
+                    is ApiResult.Success -> return when (val outcome = paid.data) {
+                        is PaymentOutcome.Succeeded -> {
+                            sendEffect(
+                                ShowMessage(
+                                    UiText.Resource(R.string.checkout_card_payment_succeeded),
+                                    MessageTone.Success,
+                                ),
+                            )
+                            ApiResult.Success(Unit)
+                        }
+
+                        is PaymentOutcome.Declined -> ApiResult.Failure(
+                            AppError.Validation(outcome.message),
+                        )
+
+                        is PaymentOutcome.Canceled -> ApiResult.Failure(
+                            AppError.Validation(outcome.message),
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    private fun applyCollectedCharge(charge: Int) {
+        _uiState.update { state ->
+            val appliedCharge = state.pendingChargeCents.coerceAtLeast(charge)
+            val nextPaid = state.paidCents + appliedCharge
+            val remaining = (
+                state.totalCents + state.tipCents - state.giftAppliedCents - nextPaid
+                ).coerceAtLeast(0)
+            if (remaining <= 0) {
+                state.copy(
+                    paidCents = nextPaid,
+                    pendingChargeCents = 0,
+                    step = CheckoutStep.Confirmed,
+                    overlay = CheckoutOverlay.None,
+                    splitAmountDigits = "",
+                    customChargeDigits = "",
+                    cashTenderedDigits = "",
+                    selectedPayLineIds = emptySet(),
+                    cardChargeCustom = false,
+                    payAmountMode = PayAmountMode.Full,
+                )
+            } else {
+                val next = state.copy(
+                    paidCents = nextPaid,
+                    pendingChargeCents = 0,
+                    step = CheckoutStep.Payment,
+                    overlay = CheckoutOverlay.None,
+                    splitAmountDigits = "",
+                    customChargeDigits = "",
+                    cashTenderedDigits = "",
+                    selectedPayLineIds = emptySet(),
+                    cardChargeCustom = false,
+                    payAmountMode = PayAmountMode.Full,
+                    tipOption = TipOption.None,
+                    tipCustomDigits = "",
+                )
+                if (next.settlement == Settlement.Cash && next.chargeCents > 0) {
+                    next.copy(cashTenderedDigits = next.chargeCents.toString())
+                } else {
+                    next
                 }
             }
         }
@@ -563,6 +663,7 @@ class CheckoutViewModel @Inject constructor(deviceRoleStore: DeviceRoleStore) : 
     private fun tryStartPayment(): Boolean {
         val state = _uiState.value
         if (state.overlay == CheckoutOverlay.Processing) return false
+        if (isSubmitting(KEY_COLLECT_PAYMENT)) return false
         if (state.pendingChargeCents > 0) return false
         if (state.chargeCents <= 0) return false
         if (state.settlement == Settlement.Cash &&
@@ -1245,5 +1346,6 @@ class CheckoutViewModel @Inject constructor(deviceRoleStore: DeviceRoleStore) : 
         const val ProcessingDelayMs = 1_600L
         const val MinSplitGuests = 2
         const val MaxSplitGuests = 50
+        const val KEY_COLLECT_PAYMENT = "checkout_collect_payment"
     }
 }

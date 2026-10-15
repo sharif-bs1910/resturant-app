@@ -18,6 +18,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.noshitechinc.restaurant.R
 import com.noshitechinc.restaurant.core.common.AppEnvironment
+import com.noshitechinc.restaurant.core.designsystem.component.button.AppButton
+import com.noshitechinc.restaurant.core.designsystem.component.button.ButtonVariant
 import com.noshitechinc.restaurant.core.designsystem.component.logo.LogoSurface
 import com.noshitechinc.restaurant.core.designsystem.component.logo.NoshiLockup
 import com.noshitechinc.restaurant.core.designsystem.component.selection.StatusBadge
@@ -28,15 +30,19 @@ import com.noshitechinc.restaurant.core.designsystem.theme.StatusTone
 import com.noshitechinc.restaurant.core.ui.AppScaffold
 
 @Composable
-fun HomeRoute(viewModel: HomeViewModel = hiltViewModel()) {
+fun HomeRoute(onOpenTerminalHarness: (() -> Unit)? = null, viewModel: HomeViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     AppScaffold(effects = viewModel.effects) { padding ->
-        HomeScreen(state = state, modifier = Modifier.padding(padding))
+        HomeScreen(
+            state = state,
+            onOpenTerminalHarness = onOpenTerminalHarness.takeIf { state.showTerminalHarness },
+            modifier = Modifier.padding(padding),
+        )
     }
 }
 
 @Composable
-fun HomeScreen(state: HomeUiState, modifier: Modifier = Modifier) {
+fun HomeScreen(state: HomeUiState, modifier: Modifier = Modifier, onOpenTerminalHarness: (() -> Unit)? = null) {
     Box(
         modifier = modifier.fillMaxSize().padding(AppTheme.spacing.xl),
         contentAlignment = Alignment.Center,
@@ -61,6 +67,13 @@ fun HomeScreen(state: HomeUiState, modifier: Modifier = Modifier) {
                 style = AppTheme.typography.bodySmall,
                 color = AppTheme.colors.textSecondary,
             )
+            if (onOpenTerminalHarness != null) {
+                AppButton(
+                    text = stringResource(R.string.terminal_harness_open),
+                    onClick = onOpenTerminalHarness,
+                    variant = ButtonVariant.Secondary,
+                )
+            }
         }
     }
 }

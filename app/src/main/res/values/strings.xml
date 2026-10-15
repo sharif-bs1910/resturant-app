@@ -266,6 +266,8 @@
     <string name="checkout_new_order_title">New order</string>
     <string name="checkout_confirmed_title">Order confirmed</string>
     <string name="checkout_payment_title">Collect payment</string>
+    <string name="checkout_card_payment_succeeded">Card payment succeeded</string>
+    <string name="checkout_terminal_need_location">Allow Location to take card payments with the reader</string>
     <string name="checkout_payment_details">Payment details</string>
     <string name="checkout_bill_context">Bill #%1$s · %2$s · Table #%3$s. The order is sent to the kitchen once the bill is fully paid.</string>
     <string name="checkout_order_summary">Order summary</string>
@@ -798,4 +800,38 @@
     <string name="self_hash_value">#%1$s</string>
     <string name="self_paid_with">Paid with</string>
     <string name="self_paid_card">Card ending in ****%1$s</string>
+
+    <string name="terminal_harness_title">Stripe Terminal harness</string>
+    <string name="terminal_harness_subtitle">Dev-only tools for Reader M2 (simulated by default). Requires the local stub server.</string>
+    <string name="terminal_harness_location">Location ID</string>
+    <string name="terminal_harness_stub_url">Stub base URL</string>
+    <string name="terminal_harness_phase">Phase</string>
+    <string name="terminal_harness_connected">Connected reader</string>
+    <string name="terminal_harness_payment_intent">PaymentIntent</string>
+    <string name="terminal_harness_simulated">Use simulated reader</string>
+    <string name="terminal_harness_readers">Discovered readers</string>
+    <string name="terminal_harness_test_stub">Test stub connection</string>
+    <string name="terminal_harness_stub_ok">Stub OK — PaymentIntent created</string>
+    <string name="terminal_harness_need_location">Allow Location (and Bluetooth if prompted), then tap Discover again</string>
+    <string name="terminal_harness_discover">Discover readers</string>
+    <string name="terminal_harness_connect">Connect</string>
+    <string name="terminal_harness_pay">Collect $1.00 test payment</string>
+    <string name="terminal_harness_cancel_pay">Cancel payment</string>
+    <string name="terminal_harness_disconnect">Disconnect</string>
+    <string name="terminal_harness_back">Back</string>
+    <string name="terminal_harness_open">Terminal harness</string>
+    <string name="terminal_harness_no_readers">No readers found</string>
+    <string name="terminal_harness_select_reader">Select a reader</string>
+    <string name="terminal_harness_pay_success">Payment succeeded</string>
+    <string name="terminal_harness_canceled">Canceled</string>
+    <string name="terminal_harness_phase_idle">Idle</string>
+    <string name="terminal_harness_phase_discovering">Discovering</string>
+    <string name="terminal_harness_phase_ready">Ready to connect</string>
+    <string name="terminal_harness_phase_connecting">Connecting</string>
+    <string name="terminal_harness_phase_connected">Connected</string>
+    <string name="terminal_harness_phase_creating_intent">Creating PaymentIntent</string>
+    <string name="terminal_harness_phase_processing">Processing payment</string>
+    <string name="terminal_harness_phase_succeeded">Succeeded</string>
+    <string name="terminal_harness_phase_declined">Declined</string>
+    <string name="terminal_harness_phase_error">Error</string>
 </resources>

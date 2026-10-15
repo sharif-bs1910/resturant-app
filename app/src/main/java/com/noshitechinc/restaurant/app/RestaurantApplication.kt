@@ -1,6 +1,8 @@
 package com.noshitechinc.restaurant.app
 
 import android.app.Application
+import com.noshitechinc.restaurant.BuildConfig
+import com.stripe.stripeterminal.TerminalApplicationDelegate
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
 
@@ -11,6 +13,9 @@ class RestaurantApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        if (BuildConfig.TERMINAL_ENABLED) {
+            TerminalApplicationDelegate.onCreate(this)
+        }
         appStartup.run()
     }
 }

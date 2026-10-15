@@ -22,3 +22,6 @@ data object SelfServiceDestination
 
 @Serializable
 data object HomeDestination
+
+@Serializable
+data object TerminalHarnessDestination

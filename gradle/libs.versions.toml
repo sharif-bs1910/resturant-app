@@ -29,6 +29,7 @@ turbine = "1.2.0"
 androidxTestExtJunit = "1.2.1"
 androidxTestRunner = "1.6.2"
 espresso = "3.6.1"
+stripeTerminal = "6.0.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -71,6 +72,8 @@ turbine = { group = "app.cash.turbine", name = "turbine", version.ref = "turbine
 androidx-test-ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidxTestExtJunit" }
 androidx-test-runner = { group = "androidx.test", name = "runner", version.ref = "androidxTestRunner" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espresso" }
+stripe-terminal = { group = "com.stripe", name = "stripeterminal", version.ref = "stripeTerminal" }
+stripe-terminal-ktx = { group = "com.stripe", name = "stripeterminal-ktx", version.ref = "stripeTerminal" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

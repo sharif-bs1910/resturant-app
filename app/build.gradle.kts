@@ -41,7 +41,7 @@ extensions.configure<ApplicationExtension> {
 
     defaultConfig {
         applicationId = "com.noshitechinc.restaurant"
-        minSdk = 25
+        minSdk = 26
         targetSdk = 36
         versionCode = 1
         versionName = "0.1.0"
@@ -87,6 +87,10 @@ extensions.configure<ApplicationExtension> {
                 buildConfigField("boolean", "CRASH_REPORTING_ENABLED", value("CRASH_REPORTING_ENABLED"))
                 buildConfigField("long", "CONNECT_TIMEOUT_SECONDS", "${value("CONNECT_TIMEOUT_SECONDS")}L")
                 buildConfigField("long", "READ_TIMEOUT_SECONDS", "${value("READ_TIMEOUT_SECONDS")}L")
+                buildConfigField("boolean", "TERMINAL_ENABLED", value("TERMINAL_ENABLED"))
+                buildConfigField("String", "TERMINAL_LOCATION_ID", "\"${value("TERMINAL_LOCATION_ID")}\"")
+                buildConfigField("String", "TERMINAL_STUB_BASE_URL", "\"${value("TERMINAL_STUB_BASE_URL")}\"")
+                buildConfigField("boolean", "TERMINAL_USE_SIMULATED_READER", value("TERMINAL_USE_SIMULATED_READER"))
                 manifestPlaceholders["crashlyticsCollectionEnabled"] = value("CRASH_REPORTING_ENABLED")
             }
         }
@@ -153,6 +157,8 @@ dependencies {
     implementation(libs.timber)
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.crashlytics)
+    implementation(libs.stripe.terminal)
+    implementation(libs.stripe.terminal.ktx)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlin.test.junit)

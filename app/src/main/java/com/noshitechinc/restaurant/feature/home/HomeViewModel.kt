@@ -2,6 +2,7 @@ package com.noshitechinc.restaurant.feature.home
 
 import com.noshitechinc.restaurant.core.common.AppEnvironment
 import com.noshitechinc.restaurant.core.common.AppInfo
+import com.noshitechinc.restaurant.core.terminal.TerminalConfig
 import com.noshitechinc.restaurant.core.ui.BaseViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -10,11 +11,12 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 @HiltViewModel
-class HomeViewModel @Inject constructor(appInfo: AppInfo) : BaseViewModel() {
+class HomeViewModel @Inject constructor(appInfo: AppInfo, terminalConfig: TerminalConfig) : BaseViewModel() {
     private val _uiState = MutableStateFlow(
         HomeUiState(
             environment = appInfo.environment.takeUnless { it == AppEnvironment.Prod },
             versionName = appInfo.versionName,
+            showTerminalHarness = terminalConfig.enabled,
         ),
     )
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()

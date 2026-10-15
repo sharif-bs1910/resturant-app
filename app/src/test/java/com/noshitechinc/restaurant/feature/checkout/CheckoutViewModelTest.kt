@@ -1,6 +1,13 @@
 package com.noshitechinc.restaurant.feature.checkout
 
+import com.noshitechinc.restaurant.core.common.ApiResult
 import com.noshitechinc.restaurant.core.designsystem.component.quantity.KeypadKey
+import com.noshitechinc.restaurant.core.terminal.TerminalConfig
+import com.noshitechinc.restaurant.core.terminal.fake.FakeTerminalClient
+import com.noshitechinc.restaurant.core.terminal.model.PaymentIntentRef
+import com.noshitechinc.restaurant.core.terminal.model.PaymentOutcome
+import com.noshitechinc.restaurant.core.terminal.model.PaymentRequest
+import com.noshitechinc.restaurant.domain.repository.TerminalPaymentRepository
 import com.noshitechinc.restaurant.feature.role.DeviceRole
 import com.noshitechinc.restaurant.feature.role.DeviceRoleStore
 import com.noshitechinc.restaurant.testing.MainDispatcherRule
@@ -8,6 +15,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 
@@ -16,9 +24,33 @@ class CheckoutViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
+    private fun checkoutVm(
+        store: DeviceRoleStore = DeviceRoleStore(),
+        terminalEnabled: Boolean = false,
+        terminal: FakeTerminalClient = FakeTerminalClient(
+            nextPaymentOutcome = PaymentOutcome.Succeeded("pi_ok"),
+        ),
+    ): CheckoutViewModel {
+        val payments = object : TerminalPaymentRepository {
+            override suspend fun createPaymentIntent(request: PaymentRequest): ApiResult<PaymentIntentRef> =
+                ApiResult.Success(PaymentIntentRef(id = "pi_ok", clientSecret = "secret"))
+        }
+        return CheckoutViewModel(
+            deviceRoleStore = store,
+            terminalClient = terminal,
+            terminalPayments = payments,
+            terminalConfig = TerminalConfig(
+                enabled = terminalEnabled,
+                locationId = "tml_test",
+                stubBaseUrl = "http://127.0.0.1/",
+                useSimulatedReader = true,
+            ),
+        )
+    }
+
     @Test
     fun `new order opens an empty phone pickup builder`() = runTest {
-        val vm = CheckoutViewModel(DeviceRoleStore())
+        val vm = checkoutVm()
         vm.onNewOrder()
         val state = vm.uiState.value
         assertEquals(CheckoutStep.Building, state.step)
@@ -31,7 +63,7 @@ class CheckoutViewModelTest {
 
     @Test
     fun `pay now opens payment and a gift card leaves the remainder due`() = runTest {
-        val vm = CheckoutViewModel(DeviceRoleStore())
+        val vm = checkoutVm()
         vm.onPay()
         assertEquals(CheckoutStep.Idle, vm.uiState.value.step)
         vm.onNewOrder()
@@ -52,7 +84,7 @@ class CheckoutViewModelTest {
 
     @Test
     fun `gift enter amount can apply a partial balance`() = runTest {
-        val vm = CheckoutViewModel(DeviceRoleStore())
+        val vm = checkoutVm()
         vm.onNewOrder()
         vm.onLoadPhoneDemoCart()
         vm.onPay()
@@ -73,7 +105,7 @@ class CheckoutViewModelTest {
 
     @Test
     fun `split by items charges only the selected lines`() = runTest {
-        val vm = CheckoutViewModel(DeviceRoleStore())
+        val vm = checkoutVm()
         vm.onNewOrder()
         vm.onLoadPhoneDemoCart()
         vm.onPay()
@@ -94,7 +126,7 @@ class CheckoutViewModelTest {
 
     @Test
     fun `partial card charge fills paid progress on remaining bill`() = runTest {
-        val vm = CheckoutViewModel(DeviceRoleStore())
+        val vm = checkoutVm()
         vm.onNewOrder()
         vm.onLoadPhoneDemoCart()
         vm.onPay()
@@ -116,7 +148,7 @@ class CheckoutViewModelTest {
 
     @Test
     fun `tip percent uses amount to pay base not full order total`() = runTest {
-        val vm = CheckoutViewModel(DeviceRoleStore())
+        val vm = checkoutVm()
         vm.onNewOrder()
         vm.onLoadPhoneDemoCart()
         vm.onPay()
@@ -134,7 +166,7 @@ class CheckoutViewModelTest {
 
     @Test
     fun `cash settlement stays selected after partial payment`() = runTest {
-        val vm = CheckoutViewModel(DeviceRoleStore())
+        val vm = checkoutVm()
         vm.onNewOrder()
         vm.onLoadPhoneDemoCart()
         vm.onPay()
@@ -152,7 +184,7 @@ class CheckoutViewModelTest {
 
     @Test
     fun `gift card apply fills progress without card charge`() = runTest {
-        val vm = CheckoutViewModel(DeviceRoleStore())
+        val vm = checkoutVm()
         vm.onNewOrder()
         vm.onLoadPhoneDemoCart()
         vm.onPay()
@@ -168,7 +200,7 @@ class CheckoutViewModelTest {
 
     @Test
     fun `cash collect of full amount confirms the order`() = runTest {
-        val vm = CheckoutViewModel(DeviceRoleStore())
+        val vm = checkoutVm()
         vm.onNewOrder()
         vm.onLoadPhoneDemoCart()
         vm.onPay()
@@ -187,7 +219,7 @@ class CheckoutViewModelTest {
 
     @Test
     fun `delivery app marks remaining amount paid`() = runTest {
-        val vm = CheckoutViewModel(DeviceRoleStore())
+        val vm = checkoutVm()
         vm.onNewOrder()
         vm.onLoadPhoneDemoCart()
         vm.onPay()
@@ -201,7 +233,7 @@ class CheckoutViewModelTest {
 
     @Test
     fun `split custom amount charges entered dollars then updates remaining`() = runTest {
-        val vm = CheckoutViewModel(DeviceRoleStore())
+        val vm = checkoutVm()
         vm.onNewOrder()
         vm.onLoadPhoneDemoCart()
         vm.onPay()
@@ -220,7 +252,7 @@ class CheckoutViewModelTest {
 
     @Test
     fun `split evenly divides remaining by guest count`() = runTest {
-        val vm = CheckoutViewModel(DeviceRoleStore())
+        val vm = checkoutVm()
         vm.onNewOrder()
         vm.onLoadPhoneDemoCart()
         vm.onPay()
@@ -234,7 +266,7 @@ class CheckoutViewModelTest {
 
     @Test
     fun `collect payment shows processing then confirms`() = runTest {
-        val vm = CheckoutViewModel(DeviceRoleStore())
+        val vm = checkoutVm()
         vm.onNewOrder()
         vm.onLoadPhoneDemoCart()
         vm.onPay()
@@ -248,7 +280,7 @@ class CheckoutViewModelTest {
 
     @Test
     fun `partial card charge stays on payment until remaining is zero`() = runTest {
-        val vm = CheckoutViewModel(DeviceRoleStore())
+        val vm = checkoutVm()
         vm.onNewOrder()
         vm.onLoadPhoneDemoCart()
         vm.onPay()
@@ -273,7 +305,7 @@ class CheckoutViewModelTest {
 
     @Test
     fun `sending the payment link opens confirm then sent dialog`() = runTest {
-        val vm = CheckoutViewModel(DeviceRoleStore())
+        val vm = checkoutVm()
         vm.onNewOrder()
         vm.onLoadPhoneDemoCart()
         vm.onPay()
@@ -294,7 +326,7 @@ class CheckoutViewModelTest {
 
     @Test
     fun `customer info overlay saves name and phone`() = runTest {
-        val vm = CheckoutViewModel(DeviceRoleStore())
+        val vm = checkoutVm()
         vm.onNewOrder()
         vm.onEditCustomer()
         assertEquals(CheckoutOverlay.Customer, vm.uiState.value.overlay)
@@ -309,7 +341,7 @@ class CheckoutViewModelTest {
 
     @Test
     fun `phone demo cart matches the phone order totals`() = runTest {
-        val vm = CheckoutViewModel(DeviceRoleStore())
+        val vm = checkoutVm()
         vm.onNewOrder()
         vm.onLoadPhoneDemoCart()
         assertEquals(3_600, vm.uiState.value.subtotalCents)
@@ -319,7 +351,7 @@ class CheckoutViewModelTest {
 
     @Test
     fun `open orders opens the queue`() = runTest {
-        val vm = CheckoutViewModel(DeviceRoleStore())
+        val vm = checkoutVm()
         vm.onOpenOrders()
         assertEquals(CheckoutStep.Queue, vm.uiState.value.step)
         assertEquals("1042", vm.uiState.value.selectedOrder?.number)
@@ -327,7 +359,7 @@ class CheckoutViewModelTest {
 
     @Test
     fun `save draft opens the draft dialog on the current cart`() = runTest {
-        val vm = CheckoutViewModel(DeviceRoleStore())
+        val vm = checkoutVm()
         vm.onNewOrder()
         vm.onLoadPhoneDemoCart()
         vm.onSaveDraft()
@@ -339,7 +371,7 @@ class CheckoutViewModelTest {
 
     @Test
     fun `delivery address saves the street and keep as pickup leaves it pickup`() = runTest {
-        val vm = CheckoutViewModel(DeviceRoleStore())
+        val vm = checkoutVm()
         vm.onNewOrder()
         vm.onFulfillment(Fulfillment.Delivery)
         vm.onEditAddress()
@@ -364,7 +396,7 @@ class CheckoutViewModelTest {
 
     @Test
     fun `orders board expands modifiers and can be marked complete`() = runTest {
-        val vm = CheckoutViewModel(DeviceRoleStore())
+        val vm = checkoutVm()
         vm.onSection(KitchenSection.Orders)
         assertEquals("1042", vm.uiState.value.selectedBoard?.number)
         assertEquals("Maya R.", vm.uiState.value.selectedBoard?.detailGuest)
@@ -381,7 +413,7 @@ class CheckoutViewModelTest {
 
     @Test
     fun `orders board opens charge refund address and cancel`() = runTest {
-        val vm = CheckoutViewModel(DeviceRoleStore())
+        val vm = checkoutVm()
         vm.onSection(KitchenSection.Orders)
         vm.onAddCharge()
         assertEquals(BoardDialog.Charge, vm.uiState.value.boardDialog)
@@ -412,7 +444,7 @@ class CheckoutViewModelTest {
     @Test
     fun `spicy tonkotsu modifiers price the add to order line`() = runTest {
         val item = MenuCatalog.first { it.id == "spicy-tonkotsu" }
-        val vm = CheckoutViewModel(DeviceRoleStore())
+        val vm = checkoutVm()
         vm.onNewOrder()
         vm.onOpenItem(item)
         val draft = vm.uiState.value.draft
@@ -429,7 +461,7 @@ class CheckoutViewModelTest {
 
     @Test
     fun `menu search filters ramen and marking unavailable hides the item`() = runTest {
-        val vm = CheckoutViewModel(DeviceRoleStore())
+        val vm = checkoutVm()
         vm.onSection(KitchenSection.Menu)
         vm.onMenuSearch("ramen")
         assertEquals(3, vm.uiState.value.visibleKitchenMenu.size)
@@ -449,7 +481,7 @@ class CheckoutViewModelTest {
 
     @Test
     fun `settings keeps zones pins and hours on the device`() = runTest {
-        val vm = CheckoutViewModel(DeviceRoleStore())
+        val vm = checkoutVm()
         vm.onSection(KitchenSection.Settings)
         val start = vm.uiState.value.settings
         vm.onSettingsChange(start.withAddedZone())
@@ -480,7 +512,7 @@ class CheckoutViewModelTest {
 
     @Test
     fun `kitchen status switches between normal and busy`() = runTest {
-        val vm = CheckoutViewModel(DeviceRoleStore())
+        val vm = checkoutVm()
         vm.onSection(KitchenSection.Status)
         vm.onKitchenMode(true)
         assertEquals(KitchenSection.Status, vm.uiState.value.section)
@@ -491,14 +523,14 @@ class CheckoutViewModelTest {
 
     @Test
     fun `time log section opens`() = runTest {
-        val vm = CheckoutViewModel(DeviceRoleStore())
+        val vm = checkoutVm()
         vm.onSection(KitchenSection.TimeLog)
         assertEquals(KitchenSection.TimeLog, vm.uiState.value.section)
     }
 
     @Test
     fun `confirm order shows success modal and ok opens payment`() = runTest {
-        val vm = CheckoutViewModel(DeviceRoleStore())
+        val vm = checkoutVm()
         vm.onNewOrder()
         vm.onLoadPhoneDemoCart()
         vm.onConfirmOrder()
@@ -513,7 +545,7 @@ class CheckoutViewModelTest {
     @Test
     fun `pos role is loaded and reporting section can open`() = runTest {
         val store = DeviceRoleStore().also { it.setRole(DeviceRole.Pos) }
-        val vm = CheckoutViewModel(store)
+        val vm = checkoutVm(store)
         assertEquals(DeviceRole.Pos, vm.uiState.value.deviceRole)
         vm.onSection(KitchenSection.Reporting)
         assertEquals(KitchenSection.Reporting, vm.uiState.value.section)
@@ -523,7 +555,7 @@ class CheckoutViewModelTest {
 
     @Test
     fun `team invite create edit and remove update members`() = runTest {
-        val vm = CheckoutViewModel(DeviceRoleStore().also { it.setRole(DeviceRole.Pos) })
+        val vm = checkoutVm(DeviceRoleStore().also { it.setRole(DeviceRole.Pos) })
         vm.onSection(KitchenSection.Team)
         val opened = vm.uiState.value.team.openInvite().copy(
             inviteEmail = "jhon@gmail.com",
@@ -548,4 +580,19 @@ class CheckoutViewModelTest {
         assertTrue(vm.uiState.value.team.members.none { it.id == "luca" })
         assertEquals(TeamDialog.None, vm.uiState.value.team.dialog)
     }
+    @Test
+    fun `card collect uses Stripe Terminal when enabled`() = runTest {
+        val terminal = FakeTerminalClient(nextPaymentOutcome = PaymentOutcome.Succeeded("pi_ok"))
+        val vm = checkoutVm(terminalEnabled = true, terminal = terminal)
+        vm.onNewOrder()
+        vm.onLoadPhoneDemoCart()
+        vm.onPay()
+        vm.onCollectPayment()
+        advanceUntilIdle()
+        assertEquals(CheckoutStep.Confirmed, vm.uiState.value.step)
+        assertEquals(1, terminal.payCount)
+        assertEquals(0, vm.uiState.value.dueCents)
+    }
+
+
 }

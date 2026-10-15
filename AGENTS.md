@@ -49,6 +49,7 @@ core/auth/          AuthProvider, TokenStore, KeystoreTokenStore, SessionManager
 core/logging/       Timber trees, CrashReporter, CrashlyticsCrashReporter, NoOpCrashReporter
 core/designsystem/  theme/ (tokens, AppTheme), interaction/, component/<group>/, state/ (generic states), preview/
 core/adaptive/      AdaptiveInfo, WidthClass, OrientationPolicy, adaptive containers
+core/terminal/      TerminalClient, TerminalConfig, fake/, stripe/ (Reader M2)
 di/                 Hilt modules
 ```
 

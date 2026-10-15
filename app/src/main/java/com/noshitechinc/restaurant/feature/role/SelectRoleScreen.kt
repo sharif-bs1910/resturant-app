@@ -40,21 +40,38 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.noshitechinc.restaurant.R
+import com.noshitechinc.restaurant.core.designsystem.component.button.AppButton
+import com.noshitechinc.restaurant.core.designsystem.component.button.ButtonVariant
 import com.noshitechinc.restaurant.core.designsystem.preview.PreviewSurface
 import com.noshitechinc.restaurant.core.designsystem.preview.ScreenPreviews
 import com.noshitechinc.restaurant.core.designsystem.theme.AppTheme
 import com.noshitechinc.restaurant.core.ui.AppScaffold
 
 @Composable
-fun SelectRoleRoute(onContinue: () -> Unit, viewModel: SelectRoleViewModel = hiltViewModel()) {
+fun SelectRoleRoute(
+    onContinue: () -> Unit,
+    onOpenTerminalHarness: (() -> Unit)? = null,
+    viewModel: SelectRoleViewModel = hiltViewModel(),
+) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     AppScaffold(effects = viewModel.effects, onEffect = { effect -> if (effect is OpenSignIn) onContinue() }) {
-        SelectRoleScreen(state = state, onSelect = viewModel::onSelect, onContinue = viewModel::onContinue)
+        SelectRoleScreen(
+            state = state,
+            onSelect = viewModel::onSelect,
+            onContinue = viewModel::onContinue,
+            onOpenTerminalHarness = onOpenTerminalHarness,
+        )
     }
 }
 
 @Composable
-fun SelectRoleScreen(state: SelectRoleUiState, onSelect: (DeviceRole) -> Unit, onContinue: () -> Unit, modifier: Modifier = Modifier) {
+fun SelectRoleScreen(
+    state: SelectRoleUiState,
+    onSelect: (DeviceRole) -> Unit,
+    onContinue: () -> Unit,
+    modifier: Modifier = Modifier,
+    onOpenTerminalHarness: (() -> Unit)? = null,
+) {
     Column(modifier = modifier.fillMaxSize().background(AppTheme.colors.background)) {
         RoleTopBar()
         BoxWithConstraints(modifier = Modifier.weight(1f).fillMaxWidth()) {
@@ -78,6 +95,14 @@ fun SelectRoleScreen(state: SelectRoleUiState, onSelect: (DeviceRole) -> Unit, o
                 ) {
                     RoleCards(selected = state.selected, onSelect = onSelect)
                     ContinueButton(enabled = state.selected != null, onClick = onContinue)
+                    if (onOpenTerminalHarness != null) {
+                        AppButton(
+                            text = stringResource(R.string.terminal_harness_open),
+                            onClick = onOpenTerminalHarness,
+                            variant = ButtonVariant.Outline,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
                 }
             }
         }

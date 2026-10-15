@@ -7,6 +7,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.noshitechinc.restaurant.BuildConfig
 import com.noshitechinc.restaurant.feature.checkout.CheckoutRoute
 import com.noshitechinc.restaurant.feature.home.HomeRoute
 import com.noshitechinc.restaurant.feature.pairing.PairingRoute
@@ -14,6 +15,7 @@ import com.noshitechinc.restaurant.feature.role.SelectRoleRoute
 import com.noshitechinc.restaurant.feature.selfservice.SelfServiceRoute
 import com.noshitechinc.restaurant.feature.signin.SignInRoute
 import com.noshitechinc.restaurant.feature.splash.SplashRoute
+import com.noshitechinc.restaurant.feature.terminalharness.TerminalHarnessRoute
 import kotlinx.coroutines.flow.Flow
 
 @Composable
@@ -37,10 +39,24 @@ fun AppNavHost(sessionEnded: Flow<Unit>, modifier: Modifier = Modifier, navContr
             )
         }
         composable<PairingDestination> {
-            PairingRoute(onPaired = { navController.navigate(SelectRoleDestination) })
+            PairingRoute(
+                onPaired = { navController.navigate(SelectRoleDestination) },
+                onOpenTerminalHarness = if (BuildConfig.TERMINAL_ENABLED) {
+                    { navController.navigate(TerminalHarnessDestination) }
+                } else {
+                    null
+                },
+            )
         }
         composable<SelectRoleDestination> {
-            SelectRoleRoute(onContinue = { navController.navigate(SignInDestination) })
+            SelectRoleRoute(
+                onContinue = { navController.navigate(SignInDestination) },
+                onOpenTerminalHarness = if (BuildConfig.TERMINAL_ENABLED) {
+                    { navController.navigate(TerminalHarnessDestination) }
+                } else {
+                    null
+                },
+            )
         }
         composable<SignInDestination> {
             SignInRoute(
@@ -54,6 +70,17 @@ fun AppNavHost(sessionEnded: Flow<Unit>, modifier: Modifier = Modifier, navContr
         }
         composable<CheckoutDestination> { CheckoutRoute() }
         composable<SelfServiceDestination> { SelfServiceRoute() }
-        composable<HomeDestination> { HomeRoute() }
+        composable<HomeDestination> {
+            HomeRoute(
+                onOpenTerminalHarness = if (BuildConfig.TERMINAL_ENABLED) {
+                    { navController.navigate(TerminalHarnessDestination) }
+                } else {
+                    null
+                },
+            )
+        }
+        composable<TerminalHarnessDestination> {
+            TerminalHarnessRoute(onBack = { navController.popBackStack() })
+        }
     }
 }

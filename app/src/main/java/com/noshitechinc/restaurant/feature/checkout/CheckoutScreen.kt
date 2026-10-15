@@ -1,5 +1,9 @@
 package com.noshitechinc.restaurant.feature.checkout
 
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -19,8 +23,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.noshitechinc.restaurant.BuildConfig
 import com.noshitechinc.restaurant.R
 import com.noshitechinc.restaurant.core.adaptive.rememberAdaptiveInfo
 import com.noshitechinc.restaurant.core.designsystem.preview.PreviewSurface
@@ -38,6 +44,46 @@ import kotlinx.coroutines.launch
 @Composable
 fun CheckoutRoute(viewModel: CheckoutViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions(),
+    ) {
+        val granted =
+            ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) ==
+                PackageManager.PERMISSION_GRANTED ||
+                ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) ==
+                PackageManager.PERMISSION_GRANTED
+        if (granted) {
+            viewModel.onCollectPayment()
+        } else {
+            viewModel.onTerminalLocationDenied()
+        }
+    }
+
+    fun collectPayment() {
+        val needsTerminal =
+            BuildConfig.TERMINAL_ENABLED && state.settlement == Settlement.Card
+        if (!needsTerminal) {
+            viewModel.onCollectPayment()
+            return
+        }
+        val locationOk =
+            ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) ==
+                PackageManager.PERMISSION_GRANTED ||
+                ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) ==
+                PackageManager.PERMISSION_GRANTED
+        if (locationOk) {
+            viewModel.onCollectPayment()
+        } else {
+            permissionLauncher.launch(
+                arrayOf(
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION,
+                ),
+            )
+        }
+    }
+
     CheckoutScreen(
         state = state,
         effects = viewModel.effects,
@@ -87,7 +133,7 @@ fun CheckoutRoute(viewModel: CheckoutViewModel = hiltViewModel()) {
             onCashTenderExact = viewModel::onCashTenderExact,
             onCashTenderNote = viewModel::onCashTenderNote,
             onRedeemGiftCard = viewModel::onRedeemGiftCard,
-            onCollectPayment = viewModel::onCollectPayment,
+            onCollectPayment = ::collectPayment,
             onBack = viewModel::onBackFromPayment,
             onSendPaymentLink = viewModel::onOpenPaymentLink,
             onTogglePayLine = viewModel::onTogglePayLine,

@@ -2,6 +2,7 @@ package com.noshitechinc.restaurant.feature.pairing
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ErrorOutline
@@ -16,6 +17,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.noshitechinc.restaurant.R
+import com.noshitechinc.restaurant.core.designsystem.component.button.AppButton
+import com.noshitechinc.restaurant.core.designsystem.component.button.ButtonVariant
 import com.noshitechinc.restaurant.core.designsystem.preview.PreviewSurface
 import com.noshitechinc.restaurant.core.designsystem.preview.ScreenPreviews
 import com.noshitechinc.restaurant.core.designsystem.theme.AppTheme
@@ -28,15 +31,26 @@ import com.noshitechinc.restaurant.feature.auth.PasscodeCells
 import com.noshitechinc.restaurant.feature.auth.PasscodeKeypad
 
 @Composable
-fun PairingRoute(onPaired: () -> Unit, viewModel: PairingViewModel = hiltViewModel()) {
+fun PairingRoute(onPaired: () -> Unit, onOpenTerminalHarness: (() -> Unit)? = null, viewModel: PairingViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     AppScaffold(effects = viewModel.effects, onEffect = { effect -> if (effect is OpenSignIn) onPaired() }) {
-        PairingScreen(state = state, onDigit = viewModel::onDigit, onDelete = viewModel::onDelete)
+        PairingScreen(
+            state = state,
+            onDigit = viewModel::onDigit,
+            onDelete = viewModel::onDelete,
+            onOpenTerminalHarness = onOpenTerminalHarness,
+        )
     }
 }
 
 @Composable
-fun PairingScreen(state: PairingUiState, onDigit: (Int) -> Unit, onDelete: () -> Unit, modifier: Modifier = Modifier) {
+fun PairingScreen(
+    state: PairingUiState,
+    onDigit: (Int) -> Unit,
+    onDelete: () -> Unit,
+    modifier: Modifier = Modifier,
+    onOpenTerminalHarness: (() -> Unit)? = null,
+) {
     AuthSplit(paired = false, body = stringResource(R.string.auth_pairing_body), modifier = modifier) {
         AuthFormColumn {
             AuthHeading(
@@ -50,6 +64,14 @@ fun PairingScreen(state: PairingUiState, onDigit: (Int) -> Unit, onDelete: () ->
                 label = stringResource(R.string.auth_pair_hint_label),
                 body = stringResource(R.string.auth_pair_hint_body),
             )
+            if (onOpenTerminalHarness != null) {
+                AppButton(
+                    text = stringResource(R.string.terminal_harness_open),
+                    onClick = onOpenTerminalHarness,
+                    variant = ButtonVariant.Outline,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
         }
     }
 }
@@ -80,7 +102,12 @@ internal fun PasscodeError(message: String) {
 @Composable
 private fun PairingPreview() {
     PreviewSurface {
-        PairingScreen(state = PairingUiState(code = "482"), onDigit = {}, onDelete = {})
+        PairingScreen(
+            state = PairingUiState(code = "482"),
+            onDigit = {},
+            onDelete = {},
+            onOpenTerminalHarness = {},
+        )
     }
 }
 
